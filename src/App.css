@@ -40,3 +40,83 @@
 .read-the-docs {
   color: #888;
 }
+
+.photo-booth-app {
+      /* display: flex;
+    justify-content: center;
+     align-items: center; 
+  height: 100vh; */
+
+}
+
+
+
+.centered-content {
+    /* width: 50%; */
+  padding: 20px;
+  /* background-color: #eee; */
+      /* flex: 0 0 1000px; */
+      display: flex;
+    /* justify-content: center;
+    align-items: center; */
+    height: 100vh;
+
+}
+
+.booth svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.photobooth-center {
+  flex: 0 0 1000px;
+}
+
+.booth { position: relative; }
+.booth svg { display: block; width: 100%; height: auto; }
+.enter {
+    position: absolute;
+    left: 55.3%;
+    top: 48%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    padding: 1.6rem 2rem;
+    border: 3px solid #641319;
+    background: #64131982;
+    color: #fff;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+    animation: pulse 1.5s infinite;
+    font-weight: 900;
+}
+
+/* Define the shake animation */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+.enter:hover {
+  background: #641319; color: #fff; border-color: #641319;
+  cursor: pointer;
+  /* animation: shake 0.3s ease-in-out infinite;  */
+  
+}
+
