@@ -1,47 +1,40 @@
 import { useState } from 'react';
 import { useAppStore, useSettingsStore } from "../app/store.ts";
-import '../styles/formsCard.css';
 import { ReactComponent as TextIcon } from '../assets/text-icon.svg';
 import { ReactComponent as ShotsIcon } from '../assets/shots-icon.svg'
 import { ReactComponent as FilterIcon } from '../assets/filter-icon.svg';
 import { ReactComponent as DirIcon } from '../assets/direction-icon.svg'
 import { ReactComponent as FramesIcon } from '../assets/frames-icon.svg'
+import '../styles/formsCard.css';
 
 
 export default function PhotoBoothSettings() {
-  const [error, setError] = useState('');
-
+    const [error, setError] = useState<string | null>(null);
 
     const { text, shotsNum, textDirection, selectedColor, selectedFilter, setText, setShotsNum, setTextDirection, setSelectedColor, setSelectedFilter  } = useSettingsStore();
 
 
-  const handleText = (event) => {
-    const inputText = event.target.value;
-    if (inputText.length > 25) {
-        setError('Text too long! Make sure it\'s less than 15 characters!');
-        return;
-    }
-    setText(event.target.value);
-  };
+    const handleText = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const inputText = event.target.value;
+        if (inputText.length > 25) {
+            setError('Text too long! Make sure it\'s less than 25 characters!');
+            return;
+        }
+        setText(event.target.value);
+    };
 
     const startPhotoSession = useAppStore((s) => s.startPhotoSession);
-  const handleSubmit = () => {
-    // event.preventDefault(); // Prevent default form submission behavior
-    // console.log('Submitted name:');
 
-    startPhotoSession();
-
-  };
+    const handleSubmit = () => {
+        startPhotoSession();
+    };
 
     return (
-
         <div>
             <section className="card-settings">
                 <h2>Settings</h2>
 
-    
                 <div className="grid">
-    
                     <div className="field">
                         <label htmlFor="text">Add Text</label>
                         <div className="input-wrap">
@@ -51,8 +44,7 @@ export default function PhotoBoothSettings() {
                             <input id="text"
                             className="input" type="text" placeholder="Itsss a photobooth time!" value={text} onChange={handleText}/>
                         </div>
-                        {error && <span className="error-warning">
-            {error}</span>}
+                        {error && <span className="error-warning">{error}</span>}
                     </div>
     
                     <div className="field">
@@ -104,11 +96,8 @@ export default function PhotoBoothSettings() {
                         <label htmlFor="filter">Select a Color for frames:</label>
                         <div className="input-wrap">
                             <span className="leading" aria-hidden="true">
-                                {/* <svg fill={selectedColor} viewBox="0 0 14 14"><rect width="14" height="14" rx="4"></rect></svg> */}
                                 <FramesIcon fill={selectedColor}/>
                             </span>
-                            {/* <input id="text"
-                            className="input" type="text" placeholder="Itsss a photobooth time!" value={text} onChange={handleText}/> */}
                             <input
                                 type="color"
                                 id="color-picker"
@@ -123,10 +112,8 @@ export default function PhotoBoothSettings() {
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6V5z"/></svg>
                         Start Photo Session
                     </button>
-    
                 </div>
             </section>
-
         </div>
     )
 }

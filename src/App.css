@@ -219,13 +219,13 @@ body {
     border-radius: 50%;
 }
 
-.photobooth-center-btn .btn:hover {
+.btn:hover {
   background-color: #346f65;
 }
 
 .settings-btn {
       text-align: left;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
 }
 
@@ -233,5 +233,5 @@ body {
   color: #d8d5aa;
 
     font-weight: 900;
-        font-size: 19px;
+        /* font-size: 19px; */
 }

@@ -1,7 +1,13 @@
 import React from 'react';
 import '../styles/Modal.css';
 
-export default function Modal({src, alt, onClose}) {
+interface ModalProps {
+    src: string;
+    alt: string;
+    onClose: () => void;
+}
+
+export default function Modal({src, alt, onClose}: ModalProps):  React.ReactElement {
     return (
         <div className="modal-layer" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -9,7 +15,7 @@ export default function Modal({src, alt, onClose}) {
                 <button className="modal-close-btn" onClick={onClose}>
                     &#10060;
                 </button>
-        </div>
+            </div>
         </div>
     )
 }

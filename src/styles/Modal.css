@@ -6,11 +6,9 @@
     height: 100%;
     background-color: #383838b9;
     z-index: 10000;
-      display: flex;
-  justify-content: center;
-  align-items: center;
-
-
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .modal-content {

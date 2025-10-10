@@ -46,4 +46,4 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       setTextDirection: (textDirection) => set({ textDirection }),
       setSelectedColor: (selectedColor) => set({ selectedColor }),
       setSelectedFilter: (selectedFilter) => set({ selectedFilter }),
-    }));
+}));
