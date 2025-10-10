@@ -50,24 +50,30 @@ export default function PhotoBooth() {
     return (
 
         <div className="photobooth-center">
-            <p>Booth</p>
             {view == 'booth' && <PhotoBoothSettings/>}
             {view == 'session'  && (
-                <div>
-                <p>Photo time</p>
-                <button
-                className="px-4 py-2 rounded-xl shadow bg-white hover:bg-neutral-100 disabled:opacity-60"
-                onClick={() => setCameraOn(true)}
-              >
-                Start Camera
-              </button>
+                <>
+                    {!cameraOn && 
+                    (
+                        <>
+                            <p>Photo Time! Get ready to look good!</p>
+                            <p>Tips: Use HTTPS, allow camera permissions, and keep the app open while capturing.</p>
+                            <button
+                            className="btn"
+                            onClick={() => setCameraOn(true)}
+                            >
+                                Start Camera
+                            </button>
+                        </>
+                        )
+                    }
                 {cameraOn && 
                 <PhotoboothVideoCamera
                     cameraOn={cameraOn}
                     setCameraOn={setCameraOn}
                 />
 }
-</div>
+</>
             )}
         </div>
     )

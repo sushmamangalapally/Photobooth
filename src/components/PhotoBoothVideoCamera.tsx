@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import PhotoBoothSettings from './PhotoBoothSettings'
-
+import Modal from './Modal';
 import { useAppStore, useSettingsStore } from "../app/store.ts";
+import {ReactComponent as CameraIcon} from '../assets/camera-icon.svg'
 
 export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
 
@@ -11,11 +12,15 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
   const [isCapturing, setIsCapturing] = useState<boolean | null>(false);
   const [shots, setShots] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [wholecountdown, setWholeCountdown] = useState<number | null>(null);
+  const [loadingCamera, setLoadingCamera] = useState<boolean | null>(false);
   const [timer, setTimer] = useState<boolean | null>(false);
 
   const frameCanvasRef = useRef<HTMLCanvasElement | null>(null); // visible preview capture
   const composeCanvasRef = useRef<HTMLCanvasElement | null>(null); // offscreen composition
   const [finalStrip, setFinalStrip] = useState<string | null>(null);
+  const [completeStrip, setCompleteStrip] = useState<boolean | null>(null);
+  
 
 
     const view = useAppStore((s) => s.view);
@@ -113,18 +118,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
     const w = canvas.width || vid.videoWidth;
     const h = canvas.height || vid.videoHeight;
 
-    // Mirror when using front camera for a more natural selfie preview
-    // const shouldMirror = facingMode === "user";
 
-    // if (shouldMirror) {
-    //   ctx.save();
-    //   ctx.translate(w, 0);
-    //   ctx.scale(-1, 1);
-    //   ctx.drawImage(vid, 0, 0, w, h);
-    //   ctx.restore();
-    // } else {
-    //   ctx.drawImage(vid, 0, 0, w, h);
-    // }
 
 
     console.log('filter')
@@ -140,19 +134,60 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
   }
 
   function takeMultiplePicturesAtOnce() {
-    setTimer(true);
+    
     let count = 0;
-    let intervalId = setInterval(() => {
-        console.log(count);
-        console.log(shots.length);
-        console.log(shotsNum);
+    if (completeStrip) {
+        startCamera();
+    }
+    setLoadingCamera(true);
+    setError(null);
+    setShots([]);
+    setCountdown(null);
+    setTimer(false);
+    setFinalStrip(null);
+    setCompleteStrip(null);
+    let intervalId = setInterval(async () => {
+        setLoadingCamera(false);
+        console.log('count ',count);
+        console.log('shots length ',shots.length);
+        console.log('shotsNum ',shotsNum);
+        console.log('countdown ',countdown);
         count++;
+        // if (count === 0) {
+        //     for (let i = 7; i >= 4; i--) {
+        //         setWholeCountdown(i);
+        //         await sleep(800);
+        //     }
+
+        // }
         if (count <= shotsNum) {
+            setTimer(true);
             runCountdownCapture();
         } else {
+            setTimer(false);
+            stopCamera();
+            setLoadingCamera(false);
+            // setWholeCountdown(null);
             clearInterval(intervalId);
         }
-    }, 4000)
+    }, 4000);
+    // let totalCount = 0;
+    // let countIntervalId = setInterval(async () => {
+    //     console.log(totalCount);
+    //     console.log(shots.length);
+    //     console.log(shotsNum);
+    //     totalCount++;
+
+    //     for (let i = 7; i >= 1; i--) {
+    //         setWholeCountdown(i);
+    //         await sleep(800);
+    //     }
+    //     if (totalCount === 7) {
+
+    //         setWholeCountdown(null);
+    //         clearInterval(countIntervalId);
+    //     }
+    // }, 4000);
   }
 
     async function runCountdownCapture() {
@@ -168,6 +203,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
         // 3-2-1 countdown
         for (let i = 3; i >= 1; i--) {
         setCountdown(i);
+        setWholeCountdown(i);
         await sleep(800);
         }
         setCountdown(null);
@@ -176,7 +212,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
         if (data) {
         setShots((prev) => {
             const next = [...prev, data].slice(0, shotsNum);
-            if (next.length === shotsNum) {
+            if (next.length === Number(shotsNum)) {
             // Compose the strip automatically when we reach target
             composeStrip(next);
             }
@@ -246,106 +282,151 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
 
                 ctx.drawImage(img, x, y, w, singleH);
                 ctx.restore();
+                loaded++;
 
-                if (++loaded === images.length) {
+                if (loaded === images.length) {
                     setFinalStrip(composeCanvas.toDataURL("image/png"));
+                    setCompleteStrip(true)
                 }
             };
             img.src = data;
         });
     }
-function composeStripSimple(images: string[]) {
-    const frameCanvas = frameCanvasRef.current;
-const composeCanvas = composeCanvasRef.current;
-if (!frameCanvas || !composeCanvas) return;
-
-const w = frameCanvas.width;
-const singleH = frameCanvas.height;
-
-// 0) No gutter, no frame — total height is just N * singleH
-const totalH = singleH * images.length;
-composeCanvas.width = w;
-composeCanvas.height = totalH;
-
-const ctx = composeCanvas.getContext("2d");
-if (!ctx) return;
-
-// Optional background (or omit to keep transparent PNG)
-ctx.fillStyle = "#ffffff";
-ctx.fillRect(0, 0, w, totalH);
-
-// Draw each image directly one after another
-let done = 0;
-images.forEach((data, idx) => {
-  const img = new Image();
-  img.onload = () => {
-    const y = idx * singleH; // touches previous image
-
-    // Apply filter only to the photo (keeps background crisp)
-    ctx.save();
-    ctx.filter = filter === "blackwhite" ? "grayscale(1)" : "none";
-    ctx.drawImage(img, 0, y, w, singleH);
-    ctx.restore();
-
-    // Export when all have drawn (handles async load order)
-    if (++done === images.length) {
-      setFinalStrip(composeCanvas.toDataURL("image/png"));
-    }
-  };
-  img.src = data;
-});
-
-}
-
 
   function sleep(ms: number) {
     return new Promise((res) => setTimeout(res, ms));
   }
 
+  function download(dataUrl: string) {
+    const filename = `strip-${shots.length}-${Date.now()}.png`;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  
+
   const videoFilterClasses = filter === 'blackwhite' ? 'blackwhite'
  : '';
   const canCaptureMore = shots.length < shotsNum;
+  const [modalImage, setModalImage] = useState(null);
 
+    const enterBooth = useAppStore((s) => s.enterBooth);
+
+
+
+  const openModal = (image) => {
+
+    setModalImage(image);
+
+  };
+
+
+
+  const closeModal = () => {
+
+    setModalImage(null);
+
+  };
+
+  function backToSettings() {
+
+    // stopCamera();
+
+    // setLoadingCamera(false);
+
+    // setError(null);
+
+    // setShots([]);
+
+    // setCountdown(null);
+
+    // setTimer(false);
+
+    // setFinalStrip(null);
+
+    // setCompleteStrip(null);
+
+    enterBooth();
+
+  }
 
     return (
 
         <div className="photobooth-center">
-                <p>Photo time woohooo</p>
+                <p className="settings-btn" onClick={backToSettings}>Back to Settings</p>
+            <div className="photobooth-center-btn">
+                <button
+                    className="btn camera"
+                    onClick={takeMultiplePicturesAtOnce}
+                    disabled={!canCaptureMore}
+                >
+                    <CameraIcon fill="#fff"/>
+                    {/* {canCaptureMore ? "Capture" : "Captured"} */}
+                </button>
+            </div>
 
-<div>
-<video
-ref={videoRef}
-autoPlay
-muted
-playsInline
-className={videoFilterClasses}
-/>
-</div>
-<div onClick={stopCamera}>Stop Camera</div>
-              <button
-                className="px-4 py-2 rounded-xl shadow bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
-                onClick={takeMultiplePicturesAtOnce}
-                disabled={ !canCaptureMore}
-              >
-                {canCaptureMore ? "Capture" : "Captured"}
-              </button>
+            <div>
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className={videoFilterClasses}
+                />
+                {loadingCamera && (      <div className="spinner-container">
+        <div className="spinner-icon"></div> {/* Or an actual icon */}
+      </div>
+)}
+                {/* Countdown overlay */}
+                {!loadingCamera && countdown !== null && (
+<div className="countdown-section">
+                {/* <div className="spinner-container">
+        <div className="spinner-icon"></div></div>
+                    <span className="text-white text-7xl font-bold">1{countdown}</span> */}
+                    <span className="text-white text-7xl font-bold"> {shots.length}/{shotsNum} </span>
+                </div>
+                )}
+                {countdown && (
+                <div className="spinner-container">
+                    <div class="spinner-container-countdown">
+                        <svg class="spinner-countdown" viewBox="0 0 100 100" fill="white">
+                            <circle cx="50" cy="50" r="45"></circle>
+                            <path class="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
+                        </svg>
+                        <div class="spinner-text">{countdown}</div>
+                    </div>
+                </div>
+                )}
 
 
-        <p>hi</p>
-            <div className="grid grid-cols-3 gap-2">
+
+                {/* <div className="countdown-section">
+                    <span className="text-white text-7xl font-bold"> {shots.length}/{shotsNum} </span>
+                </div> */}
+
+            </div>
+
+            {!completeStrip && !timer && (<div className="photobooth-center-btn">
+                <button
+                    className="btn"
+                    onClick={stopCamera}
+                    disabled={timer}
+                >
+                    Stop Camera
+                </button>
+            </div>)}
+ 
+ 
+
+
+            <div className="shots">
               {shots.map((s, i) => (
                 <img key={i} src={s} alt={`Shot ${i + 1}`} className="rounded-lg shadow" />
               ))}
             </div>
-
-
-              <button
-                className="px-4 py-2 rounded-xl shadow bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
-                onClick={() => finalStrip && download(finalStrip, `strip-${shots.length}x.png`)}
-                disabled={!finalStrip}
-              >
-                Download Strip
-              </button>
 
 
 
@@ -353,8 +434,22 @@ className={videoFilterClasses}
         {finalStrip && (
           <section className="mt-6">
             <h2 className="text-lg font-medium mb-2">Final Strip Preview</h2>
-            <img src={finalStrip} alt="Photo strip" className="rounded-2xl shadow max-h-[70vh]" />
+            <img src={finalStrip} alt="Photo strip" className="final-strip" onClick={() => openModal({largeUrl: finalStrip, alt: 'Photo strip'})}/>
           </section>
+        )}
+
+        {modalImage && (
+
+            <Modal
+
+            src={modalImage.largeUrl}
+
+            alt={modalImage.alt}
+
+            onClose={closeModal}
+
+            />
+
         )}
 
                     {/* Hidden canvases (1: last frame, 2: composition) */}

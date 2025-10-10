@@ -42,7 +42,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
       // Actions to update settings
       setText: (text) => set({ text }),
-      setShotsNum: (shotsNum) => set({ shotsNum }),
+      setShotsNum: (shotsNum) => set({ shotsNum: Number(shotsNum) }),
       setTextDirection: (textDirection) => set({ textDirection }),
       setSelectedColor: (selectedColor) => set({ selectedColor }),
       setSelectedFilter: (selectedFilter) => set({ selectedFilter }),

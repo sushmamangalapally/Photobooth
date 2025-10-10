@@ -1,0 +1,151 @@
+  :root {
+    --bg:#f7f7f9;
+    --card:#ffffff;
+    --ink:#111318;
+    --muted:#636a75;
+    --brand:#0b72ff;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --border:#e4e7ec;
+    --ring:#bcd6ff;
+    --shadow:0 6px 24px rgba(16,24,40,0.06);
+    --radius:16px;
+    --radius-sm:12px;
+    --gap:14px;
+}
+
+.card {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #893535;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+}
+
+h2 {
+    margin: 0 0 18px 0;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.grid {
+    display: grid;
+    gap: 22px;
+}
+
+.field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+svg {
+    width: 24px;
+    height: 24px;
+}
+
+.input-wrap {
+    position: relative;
+    display: flex
+;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.leading {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: grid
+;
+    place-items: center;
+    background: transparent;
+    flex: 0 0 28px;
+}
+
+.input, .select, .textarea {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: #fff;
+}
+
+.select-wrap {
+    position: relative;
+    display: flex
+;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: #fff;
+}
+
+.select-wrap select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font: inherit;
+    width: 100%;
+    padding-right: 28px;
+}
+
+.rainbow-bcgr {
+  background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+  color: transparent; /* Makes the text transparent so the background gradient shows through */
+}
+
+.btn {
+    display: inline-flex
+;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 18px;
+    width: 100%;
+    border: 0;
+    border-radius: 16px;
+    background: #4DA394;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.photobooth-center-btn {
+        display: flex
+;
+    /* gap: 75px; */
+    padding: 20px;
+    /* margin: 10px; */
+    align-items: center;
+    justify-content: center;
+}
+
+.photobooth-center-btn .btn {
+    width: 50%;
+}
+
+.shots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px;
+}
+
+.shots img {
+    width: 250px;
+    height: 140.6px;
+}
