@@ -186,75 +186,8 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
 
         setIsCapturing(false);
   }
-    function composeStrip(images: string[]) {
-        const frameCanvas = frameCanvasRef.current;
-        const composeCanvas = composeCanvasRef.current;
-        if (!frameCanvas || !composeCanvas) return;
 
-        const w = frameCanvas.width;        // width of each photo
-        const singleH = frameCanvas.height; // height of each photo
-
-        // Layout constants
-        const headerSpace = 72;          // space for the title
-        const innerPadding = 10;               // light-blue inner padding
-        const borderStroke = 34;           // thick blue border stroke
-
-        // Canvas size = (left+right mat) + header + stacked photos + (top+bottom mat)
-        const totalH = headerSpace + images.length * singleH + innerPadding * 2;
-        composeCanvas.width = w + innerPadding * 2;
-        composeCanvas.height = totalH;
-
-        const ctx = composeCanvas.getContext("2d");
-        if (!ctx) return;
-
-        // ---- background + mat + border ----
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, composeCanvas.width, composeCanvas.height);
-
-        // light-blue inner fill (mat)
-        ctx.fillStyle = selectedColor;
-        ctx.fillRect(innerPadding, innerPadding, composeCanvas.width - 2 * innerPadding, composeCanvas.height - 2 * innerPadding);
-
-        // thick outer blue border
-        ctx.strokeStyle = selectedColor; // blue
-        ctx.lineWidth = borderStroke;
-        ctx.strokeRect(0, 0, composeCanvas.width, composeCanvas.height);
-
-        // ---- title (centered in header band) ----
-        ctx.fillStyle = selectedTextColor;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = "600 28px Helvetica, Roboto, Arial";
-        ctx.fillText(text, composeCanvas.width / 2, innerPadding + headerSpace / 2);
-
-        // ---- draw photos stacked with no gaps ----
-        let loaded = 0;
-        images.forEach((data, idx) => {
-            const img = new Image();
-            img.onload = () => {
-                const x = innerPadding; // align with inner fill
-                const y = innerPadding + headerSpace + idx * singleH; // edge-to-edge stacking
-
-                ctx.save();
-                // apply filter ONLY to the photo
-                if (filter === "blackwhite"){
-                    ctx.filter = "grayscale(1)";
-                }
-                else {
-                    ctx.filter = "none";
-                }
-
-                ctx.drawImage(img, x, y, w, singleH);
-                ctx.restore();
-
-                if (++loaded === images.length) {
-                    setFinalStrip(composeCanvas.toDataURL("image/png"));
-                }
-            };
-            img.src = data;
-        });
-    }
-function composeStripSimple(images: string[]) {
+function composeStrip(images: string[]) {
     const frameCanvas = frameCanvasRef.current;
 const composeCanvas = composeCanvasRef.current;
 if (!frameCanvas || !composeCanvas) return;
