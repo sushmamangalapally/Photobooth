@@ -120,3 +120,11 @@
   
 }
 
+
+.blackwhite {
+  filter: grayscale(90%);
+}
+
+.hidden-canvases {
+  display: none;
+}

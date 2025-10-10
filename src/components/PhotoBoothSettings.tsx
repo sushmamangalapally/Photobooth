@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { useAppStore } from "../app/store.ts";
+import { useAppStore, useSettingsStore } from "../app/store.ts";
 
 export default function PhotoBoothSettings() {
-  const [text, setText] = useState('');
   const [error, setError] = useState('');
-  const [shotsNum, setShotsNum] = useState(4);
-  const [textDirection, setTextDirection] = useState('top');
-  const [selectedColor, setSelectedColor] = useState('#ffffff');
-  const [selectedColorBooth, setSelectedColorBooth] = useState('color');
+
+
+    const { text, shotsNum, textDirection, selectedColor, selectedFilter, setText, setShotsNum, setTextDirection, setSelectedColor, setSelectedFilter  } = useSettingsStore();
+
 
   const handleText = (event) => {
     const inputText = event.target.value;
@@ -22,6 +21,7 @@ export default function PhotoBoothSettings() {
   const handleSubmit = (event) => {
     event.preventDefault(); // Prevent default form submission behavior
     console.log('Submitted name:');
+
     startPhotoSession();
 
   };
@@ -32,6 +32,14 @@ export default function PhotoBoothSettings() {
             <p>settings</p>
             <form onSubmit={handleSubmit}>
             <label>
+                Text:
+                <input
+                    value={text}
+                    onChange={handleText}
+                />
+            </label>
+            {error}
+            <label>
                 Number of shots:
                 <select value={shotsNum} onChange={(e) => setShotsNum(e.target.value)}>
                     <option value="2">2</option>
@@ -41,7 +49,7 @@ export default function PhotoBoothSettings() {
             </label>
             <div>
             <label htmlFor="color-booth">Color or Black & White:</label>
-                <select value={selectedColorBooth} onChange={(e) => setSelectedColorBooth(e.target.value)}>
+                <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)}>
                     <option value="color">Color</option>
                     <option value="blackwhite">Black & White</option>
                 </select>
