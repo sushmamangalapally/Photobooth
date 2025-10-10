@@ -15,6 +15,8 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
   const [wholecountdown, setWholeCountdown] = useState<number | null>(null);
   const [loadingCamera, setLoadingCamera] = useState<boolean | null>(false);
   const [timer, setTimer] = useState<boolean | null>(false);
+  const [isCameraOn, setIsCameraOn] = useState<boolean | null>(false);
+  
 
   const frameCanvasRef = useRef<HTMLCanvasElement | null>(null); // visible preview capture
   const composeCanvasRef = useRef<HTMLCanvasElement | null>(null); // offscreen composition
@@ -139,6 +141,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
     if (completeStrip) {
         startCamera();
     }
+    setIsCameraOn(true);
     setLoadingCamera(true);
     setError(null);
     setShots([]);
@@ -166,6 +169,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
         } else {
             setTimer(false);
             stopCamera();
+            setIsCameraOn(false);
             setLoadingCamera(false);
             // setWholeCountdown(null);
             clearInterval(intervalId);
@@ -353,6 +357,8 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
 
   }
 
+  const takePicture = (shots.length < shotsNum) || isCameraOn;
+
     return (
 
         <div className="photobooth-center">
@@ -361,7 +367,7 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
                 <button
                     className="btn camera"
                     onClick={takeMultiplePicturesAtOnce}
-                    disabled={!canCaptureMore}
+                    disabled={isCameraOn}
                 >
                     <CameraIcon fill="#fff"/>
                     {/* {canCaptureMore ? "Capture" : "Captured"} */}
@@ -421,21 +427,49 @@ export default function PhotoBoothVideoCamera({cameraOn, setCameraOn}) {
  
  
 
-
+{!finalStrip && (
             <div className="shots">
               {shots.map((s, i) => (
                 <img key={i} src={s} alt={`Shot ${i + 1}`} className="rounded-lg shadow" />
               ))}
             </div>
+)}
 
 
-
-        {/* Final strip preview */}
         {finalStrip && (
+
+            <>
+
+            <div className="photobooth-center-btn">
+
+              <button
+
+                className="btn"
+
+                onClick={() => finalStrip && download(finalStrip, `strip-${shots.length}x.png`)}
+
+                disabled={!finalStrip}
+
+              >
+
+                Download Strip
+
+              </button>
+
+            </div>
+
           <section className="mt-6">
+
             <h2 className="text-lg font-medium mb-2">Final Strip Preview</h2>
-            <img src={finalStrip} alt="Photo strip" className="final-strip" onClick={() => openModal({largeUrl: finalStrip, alt: 'Photo strip'})}/>
+
+            <img src={finalStrip} alt="Photo strip" className="final-strip" onClick={() => openModal({largeUrl: finalStrip, alt: 'Photo strip'})} />
+
           </section>
+
+          
+
+          </>
+
         )}
 
         {modalImage && (
