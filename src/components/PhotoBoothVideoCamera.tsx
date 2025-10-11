@@ -23,7 +23,8 @@ export default function PhotoBoothVideoCamera() {
     const text = useSettingsStore((s) => s.text);
     const textDirection = useSettingsStore((s) => s.textDirection);
     const enterBooth = useAppStore((s) => s.enterBooth);
-  
+    const view = useAppStore((s) => s.view);
+
     // UI/logic state
     const [error, setError] = useState<string | null>(null);
     const [isCapturing, setIsCapturing] = useState<boolean | null>(false);
@@ -88,6 +89,12 @@ export default function PhotoBoothVideoCamera() {
                 const video = videoRef.current;
                 video.srcObject = streamRef.current;
                 video.setAttribute("playsinline", "true"); // iOS Safari
+                try {
+                    await video.play(); // may require a user gesture on iOS
+                } catch (err) {
+                    // If autoplay is blocked, button press later will succeed
+                    console.error(err);
+                }
             }
             setIsCameraOn(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,22 +108,67 @@ export default function PhotoBoothVideoCamera() {
     }
 
     function stopCamera() {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((t) => t.stop());
-            streamRef.current = null;
-        }
         const video = videoRef.current;
-        if (video) {
-            v.srcObject = null;
+        const stream = streamRef.current;
+
+        try {
+            if (stream) {
+                // Stop all tracks and detach them from the stream
+                stream.getTracks().forEach((t) => {
+                    try {
+                        t.stop();
+                    } catch (err) {
+                        console.error(err);
+                    }
+                    try {
+                        stream.removeTrack(t);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+                streamRef.current = null;
+            }
+        } finally {
+            if (video) {
+                try {
+                    video.pause();
+                } catch (err) {
+                    console.error(err);
+                }
+                // Detach the stream and force a readyState reset
+                // (some browsers release the camera immediately on load())
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (video as any).srcObject = null;
+                try {
+                    video.load();
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            setIsCameraOn(false);
         }
-        setIsCameraOn(false);
+
     }
 
     useEffect(() => {
         // Auto-start on mount; stop on unmount
+        let mounted = true;
         startCamera();
-        return () => stopCamera();
-    }, []);
+        if (!mounted) {
+            stopCamera();
+        }
+        // (async () => {
+        //     await startCamera();
+        //     if (!mounted) {
+        //         stopCamera();
+        //     }
+        // })();
+        return () => { 
+            mounted = false;
+            stopCamera();
+        };
+
+    }, [view]);
 
      /* ---------------- Capture & compose ---------------- */
 
@@ -299,11 +351,24 @@ export default function PhotoBoothVideoCamera() {
     const closeModal = () => {
         setModalImage(null);
     };
+
+    function backToSettings() {
+        stopCamera();
+        // give the browser a tick to release hardware, then navigate
+        requestAnimationFrame(() => {
+            enterBooth(); // view -> 'booth'
+        });
+
+        setShots([]);
+        setFinalStrip(null);
+        setStripComplete(null);
+        setError(null);
+    }
   
 
     return (
         <div className="photobooth-center">
-            <p className="settings-btn" onClick={enterBooth}>Back to Settings</p>
+            <p className="settings-btn" onClick={backToSettings}>Back to Settings</p>
 
             {error && <p className="error">{error}</p>}
 
@@ -317,7 +382,8 @@ export default function PhotoBoothVideoCamera() {
                 </button>
             </div>
 
-            <div className="video-wrap">
+
+            {isCameraOn && (<div className="video-wrap">
                 <video
                     ref={videoRef}
                     autoPlay
@@ -341,19 +407,19 @@ export default function PhotoBoothVideoCamera() {
                 {/* Circular countdown */}
                 {countdown !== null && (
                     <div className="spinner-container">
-                        <div class="spinner-container-countdown">
-                            <svg class="spinner-countdown" viewBox="0 0 100 100" fill="white">
+                        <div className="spinner-container-countdown">
+                            <svg className="spinner-countdown" viewBox="0 0 100 100" fill="white">
                                 <circle cx="50" cy="50" r="45"></circle>
-                                <path class="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
+                                <path className="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
                             </svg>
-                            <div class="spinner-text">{countdown}</div>
+                            <div className="spinner-text">{countdown}</div>
                         </div>
                     </div>
                 )}
 
-            </div>
+            </div>)}
 
-            {!stripComplete && (<div className="photobooth-center-btn">
+            {/* {!stripComplete && (<div className="photobooth-center-btn">
                 <button
                     className="btn"
                     onClick={stopCamera}
@@ -361,7 +427,7 @@ export default function PhotoBoothVideoCamera() {
                 >
                     Stop Camera
                 </button>
-            </div>)}
+            </div>)} */}
  
 
             {!finalStrip && shots.length > 0 && (

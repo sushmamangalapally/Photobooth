@@ -10,6 +10,10 @@ body {
   text-align: center;
 }
 
+.title {
+  cursor: pointer;
+}
+
 .centered-content {
   width: 100%;
   padding: 20px;

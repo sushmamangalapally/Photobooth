@@ -49,7 +49,7 @@ export default function PhotoBoothSettings() {
     
                     <div className="field">
                         <label htmlFor="shotsNum">Number of Shots:</label>
-                        <div class="select-wrap">
+                        <div className="select-wrap">
                             <span className="leading" aria-hidden="true" >
                                 <ShotsIcon />
                             </span>
@@ -58,7 +58,7 @@ export default function PhotoBoothSettings() {
                                 <option value="3">3</option>
                                 <option value="4">4</option>
                             </select>
-                            <span class="chev" aria-hidden="true">
+                            <span className="chev" aria-hidden="true">
                                 <svg width="18" height="18" viewBox="0 0 20 20" fill="black"><path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z"/></svg>
                             </span>
                         </div>
@@ -72,7 +72,7 @@ export default function PhotoBoothSettings() {
                                 <option value="color">Color</option>
                                 <option value="blackwhite">Black & White</option>
                             </select>
-                            <span class="chev" aria-hidden="true">
+                            <span className="chev" aria-hidden="true">
                                 <svg width="18" height="18" viewBox="0 0 20 20" fill="black"><path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z"/></svg>
                             </span>
                         </div>
@@ -80,13 +80,13 @@ export default function PhotoBoothSettings() {
     
                     <div className="field">
                         <label htmlFor="textDirection">Add Text Top or Below::</label>
-                        <div class="select-wrap">
+                        <div className="select-wrap">
                             <DirIcon />
                             <select id="textDirection" className="select" value={textDirection} onChange={(e) => setTextDirection(e.target.value)}>
                                 <option value="top">Top</option>
                                 <option value="bottom">Bottom</option>
                             </select>
-                            <span class="chev" aria-hidden="true">
+                            <span className="chev" aria-hidden="true">
                                 <svg width="18" height="18" viewBox="0 0 20 20" fill="black"><path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z"/></svg>
                             </span>
                         </div>
@@ -108,10 +108,13 @@ export default function PhotoBoothSettings() {
                         </div>
                     </div>
 
-                    <button class="btn" type="button" onClick={handleSubmit}>
+                    <button className="btn" type="button" onClick={handleSubmit}>
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6V5z"/></svg>
                         Start Photo Session
                     </button>
+                    
+                    <p>Photo Time! Get ready to look good!</p>
+                    <p>Tips: Use HTTPS, allow camera permissions, and keep the app open while capturing.</p>
                 </div>
             </section>
         </div>

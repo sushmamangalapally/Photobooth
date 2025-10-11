@@ -5,10 +5,11 @@ import { useAppStore } from "./app/store";
 
 function App() {
   const view = useAppStore((s) => s.view);
+  const exitBooth = useAppStore((s) => s.exitBooth);
 
   return (
     <div className="photo-booth-app">
-      <h1>Retro Photobooth</h1>
+      <h1 className="title" onClick={exitBooth}>Retro Photobooth</h1>
       <div className="centered-content">
       { view === "landing" ? <PhotoBoothEntrance /> : <PhotoBooth/>}
       </div>
