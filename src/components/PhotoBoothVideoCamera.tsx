@@ -4,7 +4,7 @@ import { useAppStore, useSettingsStore } from "../app/store.ts";
 import {ReactComponent as CameraIcon} from '../assets/camera-icon.svg'
 import '../styles/boothCamera.css';
 
-type ModalImage = { largeUrl: string; alt: string } | null;
+type ModalImage = { largeUrl: string; alt: string };
 
 export default function PhotoBoothVideoCamera() {
     // Refs
@@ -23,17 +23,17 @@ export default function PhotoBoothVideoCamera() {
     const text = useSettingsStore((s) => s.text);
     const textDirection = useSettingsStore((s) => s.textDirection);
     const enterBooth = useAppStore((s) => s.enterBooth);
-    const view = useAppStore((s) => s.view);
+    // const view = useAppStore((s) => s.view);
 
     // UI/logic state
     const [error, setError] = useState<string | null>(null);
-    const [isCapturing, setIsCapturing] = useState<boolean | null>(false);
+    const [isCapturing, setIsCapturing] = useState<boolean>(false);
     const [isCameraOn, setIsCameraOn] = useState<boolean | null>(false);
-    const [isLoadingCamera, setIsLoadingCamera] = useState<boolean | null>(false);
+    const [isLoadingCamera, setIsLoadingCamera] = useState<boolean>(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [shots, setShots] = useState<string[]>([]);
     const [finalStrip, setFinalStrip] = useState<string | null>(null);
-    const [modalImage, setModalImage] = useState(null);
+    const [modalImage, setModalImage] = useState<ModalImage | null>(null);
     const [stripComplete, setStripComplete] = useState<boolean | null>(null);
 
     /* ---------------- Camera lifecycle ---------------- */
@@ -43,10 +43,10 @@ export default function PhotoBoothVideoCamera() {
         if (!video) {
             return;
         }
+        const width = video.videoWidth || 1280;
+        const height = video.videoHeight || 720;
 
         function handleLoadedMeta() {
-            const width = video.videoWidth || 1280;
-            const height = video.videoHeight || 720;
 
             const frameCanvas = frameCanvasRef.current;
             if (frameCanvas) {
@@ -150,26 +150,49 @@ export default function PhotoBoothVideoCamera() {
 
     }
 
-    useEffect(() => {
-        // Auto-start on mount; stop on unmount
-        let mounted = true;
-        startCamera();
-        if (!mounted) {
-            stopCamera();
-        }
-        // (async () => {
-        //     await startCamera();
-        //     if (!mounted) {
-        //         stopCamera();
-        //     }
-        // })();
-        return async () => { 
-            mounted = false;
-            await sleep(100);
-            stopCamera();
-        };
+    // useEffect(() => {
+    //     // Auto-start on mount; stop on unmount
+    //     let mounted = true;
+    //     startCamera();
+    //     if (!mounted) {
+    //         stopCamera();
+    //     }
+    //     // (async () => {
+    //     //     await startCamera();
+    //     //     if (!mounted) {
+    //     //         stopCamera();
+    //     //     }
+    //     // })();
+    //     return async () => { 
+    //         mounted = false;
+    //         await sleep(100);
+    //         stopCamera();
+    //     };
 
-    }, [view]);
+    // }, [view]);
+useEffect(() => {
+  let cancelled = false;
+
+  const start = async () => {
+    try {
+      // await whatever you need (e.g., startCamera())
+      await startCamera();
+      if (cancelled) return;
+      // any post-start state updates here
+    } catch (e) {
+      // handle errors
+    }
+  };
+
+  start(); // fire and forget
+
+  // cleanup MUST be synchronous
+  return () => {
+    cancelled = true;
+    stopCamera();  // sync teardown
+  };
+}, []); // add deps if needed
+
 
      /* ---------------- Capture & compose ---------------- */
 
@@ -447,7 +470,7 @@ export default function PhotoBoothVideoCamera() {
                     <div className="photobooth-center-btn">
                         <button
                             className="btn"
-                            onClick={() => download(finalStrip, `strip-${shots.length}x.png`)}
+                            onClick={() => download(finalStrip)}
                             disabled={!finalStrip}
                         >
                             Download Strip

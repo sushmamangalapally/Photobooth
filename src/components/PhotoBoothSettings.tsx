@@ -53,7 +53,7 @@ export default function PhotoBoothSettings() {
                             <span className="leading" aria-hidden="true" >
                                 <ShotsIcon />
                             </span>
-                            <select id="shotsNum" className="select" value={shotsNum} onChange={(e) => setShotsNum(e.target.value)}>
+                            <select id="shotsNum" className="select" value={shotsNum} onChange={(e) => setShotsNum(Number(e.target.value))}>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
                                 <option value="4">4</option>

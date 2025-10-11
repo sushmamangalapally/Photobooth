@@ -19,7 +19,7 @@ export const useAppStore = create<AppState>((set) => ({
 interface SettingsState {
     text: string;
     shotsNum: number;
-    textDirection: 'top' | 'bottom';
+    textDirection: string;
     selectedColor: string;
     selectedFilter: string;
     selectedTextColor: string;
@@ -28,7 +28,6 @@ interface SettingsState {
     setShotsNum: (shotsNum: number) => void;
     setTextDirection: (textDirection: string) => void;
     setSelectedColor: (selectedColor: string) => void;
-    setSelectedTextColor: (selectedTextColor: string) => void;
     setSelectedFilter: (selectedFilter: string) => void;
 }
 
