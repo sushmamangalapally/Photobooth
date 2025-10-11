@@ -69,6 +69,7 @@ export default function PhotoBoothVideoCamera() {
 
     async function startCamera() {
         try {
+            console.log('startCamera')
             setError(null);
             setIsLoadingCamera(true);
             // If we already have a stream, reuse it
