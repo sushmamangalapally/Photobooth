@@ -85,16 +85,22 @@ export default function PhotoBoothVideoCamera() {
             }
 
             // Attach to <video> if present
-            if (videoRef.current && streamRef.current) {
+            if (view === 'session' && videoRef.current && streamRef.current) {
                 const video = videoRef.current;
                 video.srcObject = streamRef.current;
-                video.setAttribute("playsinline", "true"); // iOS Safari
-                try {
-                    await video.play(); // may require a user gesture on iOS
-                } catch (err) {
-                    // If autoplay is blocked, button press later will succeed
-                    console.error(err);
-                }
+                video.muted = true;                      // autoplay policy
+                video.playsInline = true;                // iOS
+                video.setAttribute('playsinline','true');
+                await video.play().catch(() => {});      // ignore if it needs another tap
+                video.onloadedmetadata = () => video.play().catch(()=>{});
+
+                // video.setAttribute("playsinline", "true"); // iOS Safari
+                // try {
+                //     await video.play(); // may require a user gesture on iOS
+                // } catch (err) {
+                //     // If autoplay is blocked, button press later will succeed
+                //     console.error(err);
+                // }
             }
             setIsCameraOn(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,28 +176,28 @@ export default function PhotoBoothVideoCamera() {
     //     };
 
     // }, [view]);
-useEffect(() => {
-  let cancelled = false;
+// useEffect(() => {
+//   let cancelled = false;
 
-  const start = async () => {
-    try {
-      // await whatever you need (e.g., startCamera())
-      await startCamera();
-      if (cancelled) return;
-      // any post-start state updates here
-    } catch (e) {
-      // handle errors
-    }
-  };
+//   const start = async () => {
+//     try {
+//       // await whatever you need (e.g., startCamera())
+//       await startCamera();
+//       if (cancelled) return;
+//       // any post-start state updates here
+//     } catch (e) {
+//       // handle errors
+//     }
+//   };
 
-  start(); // fire and forget
+//   start(); // fire and forget
 
-  // cleanup MUST be synchronous
-  return () => {
-    cancelled = true;
-    stopCamera();  // sync teardown
-  };
-}, []); // add deps if needed
+//   // cleanup MUST be synchronous
+//   return () => {
+//     cancelled = true;
+//     stopCamera();  // sync teardown
+//   };
+// }, []); // add deps if needed
 
 
      /* ---------------- Capture & compose ---------------- */
