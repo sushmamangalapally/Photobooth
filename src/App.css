@@ -2,6 +2,7 @@ body {
   background: #361510;
   color: #FFFCC7;
 }
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -9,100 +10,42 @@ body {
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-.photo-booth-app {
-      /* display: flex;
-    justify-content: center;
-     align-items: center; 
-  height: 100vh; */
-
-}
-
-
-
 .centered-content {
-
-        width: 100%;
-    padding: 20px;
-    background-color: #59322B;
-    /* flex: 0 0 1000px; */
-    display: flex
-;
-    /* height: 100vh; */
-    border: 5px solid #FFFCC7;
-
-}
-
-.booth svg {
-    display: block;
-    width: 100%;
-    height: auto;
+  width: 100%;
+  padding: 20px;
+  background-color: #59322B;
+  display: flex;
+  border: 5px solid #FFFCC7;
 }
 
 .photobooth-center {
   flex: 0 0 1000px;
 }
 
-.booth { position: relative; }
-.booth svg { display: block; width: 100%; height: auto; }
-.enter {
-    position: absolute;
-    left: 55.3%;
-    top: 48%;
-    transform: translate(-50%, -50%);
-    z-index: 2;
-    padding: 1.6rem 2rem;
-    border: 3px solid #D54751;
-    background: #d54751ad;
-    color: #fff;
-    border-radius: 10px;
-    transition: transform 0.3s ease;
-    animation: pulse 1.5s infinite;
-    font-weight: 900;
+.booth {
+  position: relative;
 }
 
-/* Define the shake animation */
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
+.booth svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.enter {
+  position: absolute;
+  left: 55.3%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  padding: 1.6rem 2rem;
+  border: 3px solid #D54751;
+  background: #d54751ad;
+  color: #fff;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
+  animation: pulse 1.5s infinite;
+  font-weight: 900;
 }
 
 @keyframes pulse {
@@ -117,121 +60,18 @@ body {
   }
 }
 
-
 .enter:hover {
-  background: #641319; color: #fff; border-color: #641319;
+  background: #641319;
+  color: #fff;
+  border-color: #641319;
   cursor: pointer;
-  /* animation: shake 0.3s ease-in-out infinite;  */
-  
 }
-
 
 .blackwhite {
   filter: grayscale(90%);
-}
-
-.hidden-canvases {
-  display: none;
-}
-
-    /* Spinner.css */
-    .spinner-container {
-      margin: 0 auto;
-    display: flex
-;
-    justify-content: center;
-    align-items: center;
-    }
-    .spinner-icon {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-top: 4px solid #3498db; /* Blue color for the spinning part */
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-    .spinner-container-countdown {
-    display: flex
-;
-    align-items: center;
-    justify-content: center;
-    width: 100px;
-    height: 100px;
-    position: relative;
-}
-
-.spinner-countdown {
-  width: 100%;
-  height: 100%;
-  border: 8px solid #f3f3f3;
-  border-top: 8px solid #EF9A48;
-  border-radius: 50%;
-  animation: spin 2s linear infinite;
-  box-sizing: border-box;
-}
-
-.spinner-text {
-  position: absolute;
-  font-family: sans-serif;
-  font-weight: bold;
-  font-size: 1.5em;
-  color: #333;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.countdown-section {
-  font-size: 3.2em;
-  line-height: 1.1;
-  font-weight: 600;
-}
-
-.final-strip {
-  width: 15%;
-  cursor: pointer;
-}
-
-.photobooth-center-btn .btn.camera {
-      width: 100px;
-    height: 100px;
-    border-radius: 50%;
 }
 
 .btn:hover {
   background-color: #346f65;
 }
 
-.settings-btn {
-      text-align: left;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.settings-btn:hover {
-  color: #d8d5aa;
-
-    font-weight: 900;
-        /* font-size: 19px; */
-}

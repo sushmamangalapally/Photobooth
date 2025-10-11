@@ -50,8 +50,7 @@ svg {
 
 .input-wrap {
     position: relative;
-    display: flex
-;
+    display: flex;
     align-items: center;
     gap: 10px;
     background: #fff;
@@ -64,8 +63,7 @@ svg {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    display: grid
-;
+    display: grid;
     place-items: center;
     background: transparent;
     flex: 0 0 28px;
@@ -80,8 +78,7 @@ svg {
 
 .select-wrap {
     position: relative;
-    display: flex
-;
+    display: flex;
     align-items: center;
     gap: 10px;
     border: 1px solid var(--border);
@@ -108,8 +105,7 @@ svg {
 }
 
 .btn {
-    display: inline-flex
-;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
@@ -124,11 +120,8 @@ svg {
 }
 
 .photobooth-center-btn {
-        display: flex
-;
-    /* gap: 75px; */
+    display: flex;
     padding: 20px;
-    /* margin: 10px; */
     align-items: center;
     justify-content: center;
 }
@@ -148,4 +141,23 @@ svg {
 .shots img {
     width: 250px;
     height: 140.6px;
+}
+
+.settings-btn {
+    text-align: left;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.settings-btn:hover {
+    color: #d8d5aa;
+    font-weight: 900;
+}
+
+.card-settings h2 {
+    font-size: 1.5em;
+}
+
+input[type="text"] {
+    font-size: 1.25em;
 }
