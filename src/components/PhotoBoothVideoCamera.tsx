@@ -245,10 +245,12 @@ export default function PhotoBoothVideoCamera() {
             await startCamera();
         }
 
+        const INTER_SHOT_PAUSE_MS = 600;
+
         for (let i = 0; i < shotsNum; i++) {
             await runCountdownCapture();
             if (i < shotsNum - 1) {
-                await sleep(4000);
+                await sleep(INTER_SHOT_PAUSE_MS);
             }
         }
     }

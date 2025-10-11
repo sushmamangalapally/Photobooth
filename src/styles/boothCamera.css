@@ -70,3 +70,12 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.spinner-container {
+  position: absolute;
+  inset: 0;               /* cover the video */
+  display: grid;
+  place-items: center;
+  z-index: 2;             /* above the video */
+  pointer-events: none;   /* clicks pass through */
+}
