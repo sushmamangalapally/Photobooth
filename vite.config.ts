@@ -5,7 +5,7 @@ import svgr from '@svgr/rollup';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/photobooth/",
+  base: "/Photobooth/",
   plugins: [
     react(),
     svgr({
