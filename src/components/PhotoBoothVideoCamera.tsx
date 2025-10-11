@@ -23,7 +23,7 @@ export default function PhotoBoothVideoCamera() {
     const text = useSettingsStore((s) => s.text);
     const textDirection = useSettingsStore((s) => s.textDirection);
     const enterBooth = useAppStore((s) => s.enterBooth);
-    // const view = useAppStore((s) => s.view);
+    const view = useAppStore((s) => s.view);
 
     // UI/logic state
     const [error, setError] = useState<string | null>(null);
