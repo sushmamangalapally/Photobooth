@@ -163,8 +163,9 @@ export default function PhotoBoothVideoCamera() {
         //         stopCamera();
         //     }
         // })();
-        return () => { 
+        return async () => { 
             mounted = false;
+            await sleep(100);
             stopCamera();
         };
 
