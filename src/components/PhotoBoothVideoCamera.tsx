@@ -74,8 +74,11 @@ export default function PhotoBoothVideoCamera() {
             setIsLoadingCamera(true);
             const hasModern = !!navigator.mediaDevices?.getUserMedia;
             const hasLegacy =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             !!(navigator as any).getUserMedia ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             !!(navigator as any).webkitGetUserMedia ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             !!(navigator as any).mozGetUserMedia;
 
             if (!hasModern && !hasLegacy) {
@@ -203,7 +206,9 @@ export default function PhotoBoothVideoCamera() {
   isSecureContext: window.isSecureContext,
   hasMediaDevices: !!navigator.mediaDevices,
   hasGUM: !!navigator.mediaDevices?.getUserMedia,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   legacy_webkitGetUserMedia: !!(navigator as any).webkitGetUserMedia,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   legacy_getUserMedia: !!(navigator as any).getUserMedia,
   inIframe: window.self !== window.top,
   userAgent: navigator.userAgent
@@ -432,8 +437,11 @@ function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
   return new Promise((resolve, reject) => {
     // older Safari/Firefox prefixes
     const gum =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (navigator as any).getUserMedia ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (navigator as any).webkitGetUserMedia ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (navigator as any).mozGetUserMedia;
 
     if (!gum) {
