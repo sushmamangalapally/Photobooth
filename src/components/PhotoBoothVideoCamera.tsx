@@ -72,57 +72,33 @@ export default function PhotoBoothVideoCamera() {
         try {
             setError(null);
             setIsLoadingCamera(true);
-            const hasModern = !!navigator.mediaDevices?.getUserMedia;
-            const hasLegacy =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            !!(navigator as any).getUserMedia ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            !!(navigator as any).webkitGetUserMedia ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            !!(navigator as any).mozGetUserMedia;
+    // request stream after a click/tap
+    if (!streamRef.current) {
+      streamRef.current = await getUserMediaSafe({
+        audio: false,
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+    }
 
-            if (!hasModern && !hasLegacy) {
-            throw new Error(
-                'Camera API not available in this browser. Try Safari/Chrome latest or disable in-app/embedded browser.'
-            );
-            }
-
-            // If we already have a stream, reuse it
-            if (!streamRef.current) {
-                const ms = await getUserMediaSafe({
-                    audio: false,
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user",
-                    },
-                });
-                streamRef.current = ms;
-            }
-
-    // 3) ensure <video> exists and attach stream
-    const v = await (async () => {
-      if (videoRef.current) return videoRef.current;
-      // give React a frame to mount the element
+    // ensure the <video> node is mounted (always render it or mount before calling)
+    if (!videoRef.current) {
       await new Promise(r => requestAnimationFrame(r));
-      if (!videoRef.current) throw new Error('Video element not mounted yet.');
-      return videoRef.current;
-    })();
-
+      if (!videoRef.current) throw new Error('Video element not mounted yet');
+    }
+    const v = videoRef.current!;
     v.srcObject = streamRef.current!;
     v.muted = true;
     v.playsInline = true;
     v.setAttribute('playsinline', 'true');
+    try { await v.play(); } catch {}
 
-    try { await v.play(); } catch { /* iOS may need a second tap */ }
-
-    // wait for metadata/canplay so the first frame isn’t black
-    await new Promise<void>((res) => {
-      if (v.readyState >= 2) return res();
-      const done = () => { v.removeEventListener('loadedmetadata', done); v.removeEventListener('canplay', done); res(); };
-      v.addEventListener('loadedmetadata', done, { once: true });
-      v.addEventListener('canplay', done, { once: true });
-    });
+    if (v.readyState < 2) {
+      await new Promise<void>((res) => {
+        const done = () => { v.removeEventListener('loadedmetadata', done); v.removeEventListener('canplay', done); res(); };
+        v.addEventListener('loadedmetadata', done, { once: true });
+        v.addEventListener('canplay', done, { once: true });
+      });
+    }
 
 
             // Attach to <video> if present
@@ -141,18 +117,9 @@ export default function PhotoBoothVideoCamera() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             console.error(e);
-            // setError(e?.message ?? "Unable to access camera");
-            // setIsCameraOn(false);
+    setError(e?.message || 'Unable to access camera');
+    setIsCameraOn(false);
 
-            const name = e?.name || '';
-            const msg  = e?.message || 'Unable to access camera';
-
-            // friendlier messages
-            if (name === 'NotAllowedError') setError('Camera permission denied.');
-            else if (name === 'NotFoundError') setError('No camera found on this device.');
-            else setError(msg);
-
-            setIsCameraOn(false);
 
         } finally {
             setIsLoadingCamera(false);
@@ -453,18 +420,21 @@ function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
 }
 
 async function getUserMediaSafe(constraints: Constraints): Promise<MediaStream> {
+    if (typeof window === 'undefined') {
+    throw new Error('Window not available (SSR/Pre-render).');
+  }
+
   // Must be HTTPS and in a top-level browsing context for some browsers
   if (!('isSecureContext' in window) || !window.isSecureContext) {
     throw new Error('This page is not secure (HTTPS required).');
   }
-
-  // Modern API
-  if (navigator.mediaDevices?.getUserMedia) {
-    return navigator.mediaDevices.getUserMedia(constraints);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const md = (navigator as any).mediaDevices;
+  if (md && typeof md.getUserMedia === 'function') {
+    return md.getUserMedia(constraints);
   }
-
-  // Legacy fallback
   return legacyGetUserMedia(constraints);
+
 }
 
     return (
