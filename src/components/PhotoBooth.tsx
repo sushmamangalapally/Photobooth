@@ -1,5 +1,5 @@
 import PhotoBoothSettings from './PhotoBoothSettings'
-import PhotoboothVideoCamera from './PhotoboothVideoCamera';
+import PhotoBoothVideoCamera from './PhotoBoothVideoCamera';
 import { useAppStore } from "../app/store.ts";
 
 export default function PhotoBooth() {
@@ -8,7 +8,7 @@ export default function PhotoBooth() {
     return (
         <div className="photobooth-center">
             {view === 'booth' && <PhotoBoothSettings/>}
-            {view === 'session' && <PhotoboothVideoCamera />}
+            {view === 'session' && <PhotoBoothVideoCamera />}
         </div>
     )
 }

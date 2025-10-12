@@ -19,7 +19,7 @@ export default function PhotoBoothVideoCamera() {
     const filter = useSettingsStore((s) => s.selectedFilter);
     const shotsNum = useSettingsStore((s) => s.shotsNum);
     const selectedColor = useSettingsStore((s) => s.selectedColor);
-    const selectedTextColor = useSettingsStore((s) => s.selectedTextColor);
+    const selectedTextColor = useSettingsStore((s) => s.selectedTextColor)
     const text = useSettingsStore((s) => s.text);
     const textDirection = useSettingsStore((s) => s.textDirection);
     const enterBooth = useAppStore((s) => s.enterBooth);
@@ -27,13 +27,13 @@ export default function PhotoBoothVideoCamera() {
 
     // UI/logic state
     const [error, setError] = useState<string | null>(null);
-    const [isCapturing, setIsCapturing] = useState<boolean | null>(false);
+    const [isCapturing, setIsCapturing] = useState<boolean>(false);
     const [isCameraOn, setIsCameraOn] = useState<boolean | null>(false);
-    const [isLoadingCamera, setIsLoadingCamera] = useState<boolean | null>(false);
+    const [isLoadingCamera, setIsLoadingCamera] = useState<boolean>(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [shots, setShots] = useState<string[]>([]);
     const [finalStrip, setFinalStrip] = useState<string | null>(null);
-    const [modalImage, setModalImage] = useState(null);
+    const [modalImage, setModalImage] = useState<ModalImage | null>(null);
     const [stripComplete, setStripComplete] = useState<boolean | null>(null);
 
     /* ---------------- Camera lifecycle ---------------- */
@@ -45,8 +45,8 @@ export default function PhotoBoothVideoCamera() {
         }
 
         function handleLoadedMeta() {
-            const width = video.videoWidth || 1280;
-            const height = video.videoHeight || 720;
+            const width = video?.videoWidth || 1280;
+            const height = video?.videoHeight || 720;
 
             const frameCanvas = frameCanvasRef.current;
             if (frameCanvas) {
@@ -163,7 +163,7 @@ export default function PhotoBoothVideoCamera() {
         //         stopCamera();
         //     }
         // })();
-        return async () => { 
+        return () => { 
             mounted = false;
             // await sleep(100);
             stopCamera();
@@ -447,7 +447,7 @@ export default function PhotoBoothVideoCamera() {
                     <div className="photobooth-center-btn">
                         <button
                             className="btn"
-                            onClick={() => download(finalStrip, `strip-${shots.length}x.png`)}
+                            onClick={() => download(finalStrip)}
                             disabled={!finalStrip}
                         >
                             Download Strip

@@ -11,7 +11,7 @@ import '../styles/formsCard.css';
 export default function PhotoBoothSettings() {
     const [error, setError] = useState<string | null>(null);
 
-    const { text, shotsNum, textDirection, selectedColor, selectedFilter, setText, setShotsNum, setTextDirection, setSelectedColor, setSelectedFilter  } = useSettingsStore();
+    const { text, shotsNum, textDirection, selectedColor, selectedTextColor, selectedFilter, setText, setShotsNum, setTextDirection, setSelectedColor, setSelectedTextColor, setSelectedFilter  } = useSettingsStore();
 
 
     const handleText = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,7 +53,7 @@ export default function PhotoBoothSettings() {
                             <span className="leading" aria-hidden="true" >
                                 <ShotsIcon />
                             </span>
-                            <select id="shotsNum" className="select" value={shotsNum} onChange={(e) => setShotsNum(e.target.value)}>
+                            <select id="shotsNum" className="select" value={shotsNum} onChange={(e) => setShotsNum(Number(e.target.value))}>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
                                 <option value="4">4</option>
@@ -104,6 +104,22 @@ export default function PhotoBoothSettings() {
                                 className="input" 
                                 value={selectedColor}
                                 onChange={(e) => setSelectedColor(e.target.value)}
+                            />
+                        </div>
+                    </div>
+    
+                    <div className="field">
+                        <label htmlFor="filter">Select a Color for Text:</label>
+                        <div className="input-wrap">
+                            <span className="leading" aria-hidden="true">
+                                <TextIcon  fill={selectedTextColor}/>
+                            </span>
+                            <input
+                                type="color"
+                                id="color-picker"
+                                className="input" 
+                                value={selectedTextColor}
+                                onChange={(e) => setSelectedTextColor(e.target.value)}
                             />
                         </div>
                     </div>
