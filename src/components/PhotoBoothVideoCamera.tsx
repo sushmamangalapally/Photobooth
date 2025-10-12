@@ -307,6 +307,10 @@ export default function PhotoBoothVideoCamera() {
     setError(null);
   }
 
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
+
   /* ---------------- getUserMedia (safe) ---------------- */
   function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
     return new Promise((resolve, reject) => {
