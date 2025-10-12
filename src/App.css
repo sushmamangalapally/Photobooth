@@ -26,6 +26,10 @@ body {
   flex: 0 0 1000px;
 }
 
+_::-webkit-full-page-media, _:future, :root .photobooth-center {
+    flex: 0 0 600px;
+}
+
 .booth {
   position: relative;
 }
