@@ -1,552 +1,438 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import Modal from './Modal';
-import { useAppStore, useSettingsStore } from "../app/store.ts";
-import {ReactComponent as CameraIcon} from '../assets/camera-icon.svg'
+import { useAppStore, useSettingsStore } from '../app/store.ts';
+// If you use Vite + vite-plugin-svgr, prefer:
+// import CameraIcon from '../assets/camera-icon.svg?react';
+import { ReactComponent as CameraIcon } from '../assets/camera-icon.svg';
 import '../styles/boothCamera.css';
 
-type ModalImage = { largeUrl: string; alt: string } | null;
+type ModalImage = { largeUrl: string; alt: string };
 type Constraints = MediaStreamConstraints;
 
 export default function PhotoBoothVideoCamera() {
-    // Refs
-    const videoRef = useRef<HTMLVideoElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    // visible preview capture
-    const frameCanvasRef = useRef<HTMLCanvasElement | null>(null); 
-    // offscreen composition
-    const composeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  /* ---------------- Refs ---------------- */
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const frameCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const composeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    // Stores
-    const filter = useSettingsStore((s) => s.selectedFilter);
-    const shotsNum = useSettingsStore((s) => s.shotsNum);
-    const selectedColor = useSettingsStore((s) => s.selectedColor);
-    const selectedTextColor = useSettingsStore((s) => s.selectedTextColor)
-    const text = useSettingsStore((s) => s.text);
-    const textDirection = useSettingsStore((s) => s.textDirection);
-    const enterBooth = useAppStore((s) => s.enterBooth);
-    const view = useAppStore((s) => s.view);
+  /* ---------------- Stores ---------------- */
+  const filter = useSettingsStore((s) => s.selectedFilter);
+  const shotsNum = useSettingsStore((s) => s.shotsNum);
+  const selectedColor = useSettingsStore((s) => s.selectedColor);
+  const selectedTextColor = useSettingsStore((s) => s.selectedTextColor);
+  const text = useSettingsStore((s) => s.text);
+  const textDirection = useSettingsStore((s) => s.textDirection);
+  const enterBooth = useAppStore((s) => s.enterBooth);
 
-    // UI/logic state
-    const [error, setError] = useState<string | null>(null);
-    const [isCapturing, setIsCapturing] = useState<boolean>(false);
-    const [isCameraOn, setIsCameraOn] = useState<boolean | null>(false);
-    const [isLoadingCamera, setIsLoadingCamera] = useState<boolean>(false);
-    const [countdown, setCountdown] = useState<number | null>(null);
-    const [shots, setShots] = useState<string[]>([]);
-    const [finalStrip, setFinalStrip] = useState<string | null>(null);
-    const [modalImage, setModalImage] = useState<ModalImage | null>(null);
-    const [stripComplete, setStripComplete] = useState<boolean | null>(null);
+  /* ---------------- UI state ---------------- */
+  const [videoReady, setVideoReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [shots, setShots] = useState<string[]>([]);
+  const [finalStrip, setFinalStrip] = useState<string | null>(null);
+  const [modalImage, setModalImage] = useState<ModalImage | null>(null);
 
-    /* ---------------- Camera lifecycle ---------------- */
+  /* ---------------- Utilities ---------------- */
+  const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) {
-            return;
-        }
+  function waitForVideoMounted(): Promise<HTMLVideoElement> {
+    return new Promise((resolve) => {
+      if (videoRef.current) return resolve(videoRef.current);
+      // allow React to mount the node next frame
+      requestAnimationFrame(() => resolve(videoRef.current!));
+    });
+  }
 
-        function handleLoadedMeta() {
-            const width = video?.videoWidth || 1280;
-            const height = video?.videoHeight || 720;
+  function waitForVideoReady(v: HTMLVideoElement): Promise<void> {
+    return new Promise((resolve) => {
+      if (v.readyState >= 2) return resolve(); // HAVE_CURRENT_DATA
+      const done = () => {
+        v.removeEventListener('loadedmetadata', done);
+        v.removeEventListener('canplay', done);
+        resolve();
+      };
+      v.addEventListener('loadedmetadata', done, { once: true });
+      v.addEventListener('canplay', done, { once: true });
+    });
+  }
 
-            const frameCanvas = frameCanvasRef.current;
-            if (frameCanvas) {
-                frameCanvas.width = width;
-                frameCanvas.height = height;
-            }
-            const composeCanvas = composeCanvasRef.current;
-            if (composeCanvas) {
-                composeCanvas.width = width;
-                // Make room for gutters
-                composeCanvas.height = height * shotsNum + 20 * (shotsNum - 1); 
-            }
-        }
+  /* ---------------- Canvas sizing on metadata ---------------- */
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
 
-        video.addEventListener("loadedmetadata", handleLoadedMeta);
+    function handleLoadedMeta() {
+      const width = v?.videoWidth || 1280;
+      const height = v?.videoHeight || 720;
 
-        return () => video.removeEventListener("loadedmetadata", handleLoadedMeta);
-    }, [shotsNum]);
+      const frame = frameCanvasRef.current;
+      if (frame) {
+        frame.width = width;
+        frame.height = height;
+      }
+      const comp = composeCanvasRef.current;
+      if (comp) {
+        comp.width = width;
+        comp.height = height * shotsNum + 20 * (shotsNum - 1);
+      }
+    }
 
+    v.addEventListener('loadedmetadata', handleLoadedMeta);
+    return () => v.removeEventListener('loadedmetadata', handleLoadedMeta);
+  }, [shotsNum]);
 
-    async function startCamera() {
-        try {
-            setError(null);
-            setIsLoadingCamera(true);
-    // request stream after a click/tap
+  /* ---------------- Camera start/stop ---------------- */
+  async function startCamera() {
+    setError(null);
+    setVideoReady(false);
+    setIsLoadingCamera(true);
+
+    try {
+      if (!streamRef.current) {
+        streamRef.current = await getUserMediaSafe({
+          audio: false,
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+      }
+
+      const v = await waitForVideoMounted();
+      v.srcObject = streamRef.current!;
+      v.muted = true;
+      v.playsInline = true;
+      v.setAttribute('playsinline', 'true');
+
+      try {
+        await v.play();
+      } catch {
+        // some mobile browsers need an extra tap; ignore
+      }
+
+      await waitForVideoReady(v);
+      setVideoReady(true);
+    } catch (e: any) {
+      setError(e?.message || 'Unable to access camera');
+      // make sure we don’t think it’s ready
+      setVideoReady(false);
+    } finally {
+      setIsLoadingCamera(false);
+    }
+  }
+
+  function stopCamera() {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+
+    try {
+      if (stream) {
+        stream.getTracks().forEach((t) => {
+          try { t.stop(); } catch (err){console.error(err);}
+          try { stream.removeTrack(t); } catch (err){console.error(err);}
+        });
+        streamRef.current = null;
+      }
+    } finally {
+      if (video) {
+        try { video.pause(); } catch (err) {console.error(err);}
+        (video as any).srcObject = null;
+        try { video.load(); } catch (err) {console.error(err);}
+      }
+      setVideoReady(false);
+    }
+  }
+
+  /* ---------------- Capture ---------------- */
+  async function drawFrameToCanvasSafely(): Promise<string | null> {
+    const v = await waitForVideoMounted();
+    await waitForVideoReady(v);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+    const frameCanvas = frameCanvasRef.current!;
+    const w = v.videoWidth || 1280;
+    const h = v.videoHeight || 720;
+    frameCanvas.width = w;
+    frameCanvas.height = h;
+
+    const ctx = frameCanvas.getContext('2d')!;
+    ctx.save();
+    ctx.filter = filter === 'blackwhite' ? 'grayscale(1)' : 'none';
+    ctx.drawImage(v, 0, 0, w, h);
+    ctx.restore();
+
+    return frameCanvas.toDataURL('image/png');
+  }
+
+  async function runCountdownCapture() {
     if (!streamRef.current) {
-      streamRef.current = await getUserMediaSafe({
-        audio: false,
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-    }
-
-    // ensure the <video> node is mounted (always render it or mount before calling)
-    if (!videoRef.current) {
-      await new Promise(r => requestAnimationFrame(r));
-      if (!videoRef.current) throw new Error('Video element not mounted yet');
-    }
-    const v = videoRef.current!;
-    v.srcObject = streamRef.current!;
-    v.muted = true;
-    v.playsInline = true;
-    v.setAttribute('playsinline', 'true');
-    try { await v.play(); } catch {}
-
-    if (v.readyState < 2) {
-      await new Promise<void>((res) => {
-        const done = () => { v.removeEventListener('loadedmetadata', done); v.removeEventListener('canplay', done); res(); };
-        v.addEventListener('loadedmetadata', done, { once: true });
-        v.addEventListener('canplay', done, { once: true });
-      });
-    }
-
-
-            // Attach to <video> if present
-            // if (videoRef.current && streamRef.current) {
-            //     const video = videoRef.current;
-            //     video.srcObject = streamRef.current;
-            //     video.setAttribute("playsinline", "true"); // iOS Safari
-            //     try {
-            //         await video.play(); // may require a user gesture on iOS
-            //     } catch (err) {
-            //         // If autoplay is blocked, button press later will succeed
-            //         console.error(err);
-            //     }
-            // }
-            setIsCameraOn(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-            console.error(e);
-    setError(e?.message || 'Unable to access camera');
-    setIsCameraOn(false);
-
-
-        } finally {
-            setIsLoadingCamera(false);
-        }
-    }
-
-    function stopCamera() {
-        const video = videoRef.current;
-        const stream = streamRef.current;
-
-        try {
-            if (stream) {
-                // Stop all tracks and detach them from the stream
-                stream.getTracks().forEach((t) => {
-                    try {
-                        t.stop();
-                    } catch (err) {
-                        console.error(err);
-                    }
-                    try {
-                        stream.removeTrack(t);
-                    } catch (err) {
-                        console.error(err);
-                    }
-                });
-                streamRef.current = null;
-            }
-        } finally {
-            if (video) {
-                try {
-                    video.pause();
-                } catch (err) {
-                    console.error(err);
-                }
-                // Detach the stream and force a readyState reset
-                // (some browsers release the camera immediately on load())
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (video as any).srcObject = null;
-                try {
-                    video.load();
-                } catch (err) {
-                    console.error(err);
-                }
-            }
-            setIsCameraOn(false);
-        }
-
-    }
-
-    console.table({
-  isSecureContext: window.isSecureContext,
-  hasMediaDevices: !!navigator.mediaDevices,
-  hasGUM: !!navigator.mediaDevices?.getUserMedia,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  legacy_webkitGetUserMedia: !!(navigator as any).webkitGetUserMedia,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  legacy_getUserMedia: !!(navigator as any).getUserMedia,
-  inIframe: window.self !== window.top,
-  userAgent: navigator.userAgent
-});
-
-
-    useEffect(() => {
-        // Auto-start on mount; stop on unmount
-        let mounted = true;
-        startCamera();
-        if (!mounted) {
-            stopCamera();
-        }
-        // (async () => {
-        //     await startCamera();
-        //     if (!mounted) {
-        //         stopCamera();
-        //     }
-        // })();
-        return () => { 
-            mounted = false;
-            // await sleep(100);
-            stopCamera();
-        };
-
-    }, [view]);
-
-     /* ---------------- Capture & compose ---------------- */
-
-    const  sleep = (ms: number) => {
-        return new Promise((res) => setTimeout(res, ms));
-    }
-
-    function drawFrameToCanvas(): string | null {
-        const video = videoRef.current;
-        const frameCanvas = frameCanvasRef.current;
-        if (!video || !frameCanvas) {
-            return null;
-        }
-
-        const ctx = frameCanvas.getContext("2d");
-        if (!ctx) {
-            return null;
-        }
-
-        const w = frameCanvas.width || video.videoWidth;
-        const h = frameCanvas.height || video.videoHeight;
-
-        ctx.save();
-        ctx.filter = filter === "blackwhite" ? "grayscale(1)" : "none";
-        ctx.drawImage(video, 0, 0, w, h);
-        ctx.restore();
-
-        return frameCanvas.toDataURL("image/png");
-    }
-    async function runCountdownCapture() {
-        if (!streamRef.current) {
-            setError("Start the camera first.");
-            return;
-        }
-        if (isCapturing){
-            return;
-        }
-
-        setIsCapturing(true);
-        setError(null);
-
-        // 3-2-1 countdown
-        for (let i = 3; i >= 1; i--) {
-            setCountdown(i);
-            await sleep(800);
-        }
-        setCountdown(null);
-
-        const data = drawFrameToCanvas();
-        if (data) {
-            setShots((prev) => {
-                const next = [...prev, data].slice(0, shotsNum);
-                if (next.length === Number(shotsNum)) {
-                    // Compose the strip automatically when we reach target number of shots
-                    composeStrip(next);
-                }
-                return next;
-            });
-        }
-
-        setIsCapturing(false);
-    }
-
-    async function takeMultiplePicturesAtOnce() {
-        if (stripComplete) {
-            startCamera();
-        }
-        setShots([]);
-        setFinalStrip(null);
-        setStripComplete(null);
-        setError(null);
-
-        if (!isCameraOn) {
-            await startCamera();
-        }
-
-        const INTER_SHOT_PAUSE_MS = 600;
-
-        for (let i = 0; i < shotsNum; i++) {
-            await runCountdownCapture();
-            if (i < shotsNum - 1) {
-                await sleep(INTER_SHOT_PAUSE_MS);
-            }
-        }
-    }
-
-
-    function composeStrip(images: string[]) {
-        const frameCanvas = frameCanvasRef.current;
-        const composeCanvas = composeCanvasRef.current;
-        if (!frameCanvas || !composeCanvas) {
-            return;
-        }
-
-        const width = frameCanvas.width;        // width of each photo
-        const singleHeight = frameCanvas.height; // height of each photo
-
-        // Layout constants
-        const headerOrTopSpace = 72; // space for the title
-        const innerPadding = 10;    // inner padding
-        const borderStroke = 34;    // border stroke
-
-        // Canvas size = (left+right mat) + header + stacked photos + (top+bottom mat)
-        const totalHeight = headerOrTopSpace + images.length * singleHeight + innerPadding * 2;
-        composeCanvas.width = width + innerPadding * 2;
-        composeCanvas.height = totalHeight;
-
-        const ctx = composeCanvas.getContext("2d");
-        if (!ctx) {
-            return;
-        }
-
-        // ---- background + mat + border ----
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, composeCanvas.width, composeCanvas.height);
-
-        // inner fill (mat)
-        ctx.fillStyle = selectedColor;
-        ctx.fillRect(innerPadding, innerPadding, composeCanvas.width - 2 * innerPadding, composeCanvas.height - 2 * innerPadding);
-
-        // thick outer border
-        ctx.strokeStyle = selectedColor;
-        ctx.lineWidth = borderStroke;
-        ctx.strokeRect(0, 0, composeCanvas.width, composeCanvas.height);
-
-        // ---- title (centered in header band) ----
-        if (text && text.length) {
-            ctx.fillStyle = selectedTextColor;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = "600 28px Helvetica, Roboto, Arial";
-            if (textDirection === 'top')  {
-                ctx.fillText(text, composeCanvas.width / 2, innerPadding + headerOrTopSpace / 2);
-                
-            } else if (textDirection === 'bottom')  {
-                ctx.fillText(text, composeCanvas.width / 2, composeCanvas.height - innerPadding - headerOrTopSpace / 2);
-
-            }
-        }
-
-        // ---- draw photos stacked with no gaps ----
-        let loaded = 0;
-        images.forEach((data, idx) => {
-            const img = new Image();
-            img.onload = () => {
-                const x = innerPadding; // align with inner fill
-                const y = textDirection === 'bottom' ? innerPadding + idx * singleHeight : innerPadding + headerOrTopSpace + idx * singleHeight; // edge-to-edge stacking
-
-                ctx.save();
-                // apply filter ONLY to the photo
-                ctx.filter = filter === "blackwhite" ? "grayscale(1)" : "none";
-
-                ctx.drawImage(img, x, y, width, singleHeight);
-                ctx.restore();
-
-                loaded++;
-                if (loaded === images.length) {
-                    setFinalStrip(composeCanvas.toDataURL("image/png"));
-                    setStripComplete(true);
-                    stopCamera();
-                }
-            };
-            img.src = data;
-        });
-    }
-
-    /* ---------------- Helpers / UI ---------------- */
-    function download(dataUrl: string) {
-        const filename = `strip-${shots.length}-${Date.now()}.png`;
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    }
-
-    const openModal = (image: ModalImage) => {
-        setModalImage(image);
-    };
-
-    const closeModal = () => {
-        setModalImage(null);
-    };
-
-    function backToSettings() {
-        stopCamera();
-        // give the browser a tick to release hardware, then navigate
-        requestAnimationFrame(() => {
-            enterBooth(); // view -> 'booth'
-        });
-
-        setShots([]);
-        setFinalStrip(null);
-        setStripComplete(null);
-        setError(null);
-    }
-  
-function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
-  return new Promise((resolve, reject) => {
-    // older Safari/Firefox prefixes
-    const gum =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).getUserMedia ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).webkitGetUserMedia ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).mozGetUserMedia;
-
-    if (!gum) {
-      reject(new Error('getUserMedia not supported'));
+      setError('Start the camera first.');
       return;
     }
-    gum.call(navigator, constraints, resolve, reject);
-  });
-}
+    if (isCapturing) return;
 
-async function getUserMediaSafe(constraints: Constraints): Promise<MediaStream> {
-    if (typeof window === 'undefined') {
-    throw new Error('Window not available (SSR/Pre-render).');
+    setIsCapturing(true);
+    setError(null);
+
+    // 3 → 2 → 1
+    for (let i = 3; i >= 1; i--) {
+      setCountdown(i);
+      await sleep(1000);
+    }
+    setCountdown(0); // keep 0 visible during the snap
+
+    const data = await drawFrameToCanvasSafely();
+
+    setCountdown(null); // hide overlay
+
+    if (data) {
+      setShots((prev) => {
+        const next = [...prev, data].slice(0, shotsNum);
+        if (next.length === Number(shotsNum)) composeStrip(next);
+        return next;
+      });
+    }
+
+    setIsCapturing(false);
   }
 
-  // Must be HTTPS and in a top-level browsing context for some browsers
-  if (!('isSecureContext' in window) || !window.isSecureContext) {
-    throw new Error('This page is not secure (HTTPS required).');
+  async function takeMultiplePicturesAtOnce() {
+    // Start camera on first click if needed
+    if (!videoReady) {
+      await startCamera();
+      if (!videoReady) return; // still not ready; bail
+    }
+
+    // reset
+    setShots([]);
+    setFinalStrip(null);
+    setError(null);
+
+    const INTER_SHOT_PAUSE_MS = 600;
+    for (let i = 0; i < shotsNum; i++) {
+      await runCountdownCapture();
+      if (i < shotsNum - 1) await sleep(INTER_SHOT_PAUSE_MS);
+    }
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const md = (navigator as any).mediaDevices;
-  if (md && typeof md.getUserMedia === 'function') {
-    return md.getUserMedia(constraints);
+
+  /* ---------------- Compose strip ---------------- */
+  function composeStrip(images: string[]) {
+    const frameCanvas = frameCanvasRef.current;
+    const composeCanvas = composeCanvasRef.current;
+    if (!frameCanvas || !composeCanvas) return;
+
+    const width = frameCanvas.width;
+    const singleHeight = frameCanvas.height;
+
+    const headerOrTopSpace = 72;
+    const innerPadding = 10;
+    const borderStroke = 34;
+
+    const totalHeight = headerOrTopSpace + images.length * singleHeight + innerPadding * 2;
+    composeCanvas.width = width + innerPadding * 2;
+    composeCanvas.height = totalHeight;
+
+    const ctx = composeCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, composeCanvas.width, composeCanvas.height);
+
+    ctx.fillStyle = selectedColor;
+    ctx.fillRect(
+      innerPadding,
+      innerPadding,
+      composeCanvas.width - 2 * innerPadding,
+      composeCanvas.height - 2 * innerPadding
+    );
+
+    ctx.strokeStyle = selectedColor;
+    ctx.lineWidth = borderStroke;
+    ctx.strokeRect(0, 0, composeCanvas.width, composeCanvas.height);
+
+    if (text && text.length) {
+      ctx.fillStyle = selectedTextColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '600 28px Helvetica, Roboto, Arial';
+      if (textDirection === 'top') {
+        ctx.fillText(text, composeCanvas.width / 2, innerPadding + headerOrTopSpace / 2);
+      } else if (textDirection === 'bottom') {
+        ctx.fillText(text, composeCanvas.width / 2, composeCanvas.height - innerPadding - headerOrTopSpace / 2);
+      }
+    }
+
+    let loaded = 0;
+    images.forEach((data, idx) => {
+      const img = new Image();
+      img.onload = () => {
+        const x = innerPadding;
+        const y =
+          textDirection === 'bottom'
+            ? innerPadding + idx * singleHeight
+            : innerPadding + headerOrTopSpace + idx * singleHeight;
+
+        ctx.save();
+        ctx.filter = filter === 'blackwhite' ? 'grayscale(1)' : 'none';
+        ctx.drawImage(img, x, y, width, singleHeight);
+        ctx.restore();
+
+        loaded++;
+        if (loaded === images.length) {
+          setFinalStrip(composeCanvas.toDataURL('image/png'));
+          stopCamera();
+        }
+      };
+      img.src = data;
+    });
   }
-  return legacyGetUserMedia(constraints);
 
-}
+  /* ---------------- Modal/Download/Back ---------------- */
+  function download(dataUrl: string) {
+    const filename = `strip-${shots.length}-${Date.now()}.png`;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 
-    return (
-        <div className="photobooth-center">
-            <p className="settings-btn" onClick={backToSettings}>Back to Settings</p>
+  const openModal = (image: ModalImage) => setModalImage(image);
 
-            {error && <p className="error">{error}</p>}
+  function backToSettings() {
+    stopCamera();
+    requestAnimationFrame(() => enterBooth());
+    setShots([]);
+    setFinalStrip(null);
+    setError(null);
+  }
 
-            <div className="photobooth-center-btn">
-                <button
-                    className="btn camera"
-                    onClick={takeMultiplePicturesAtOnce}
-                    disabled={isCapturing || isLoadingCamera}
-                >
-                    <CameraIcon fill="#fff"/>
-                </button>
+  /* ---------------- getUserMedia (safe) ---------------- */
+  function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
+    return new Promise((resolve, reject) => {
+      const gum =
+        (navigator as any).getUserMedia ||
+        (navigator as any).webkitGetUserMedia ||
+        (navigator as any).mozGetUserMedia;
+      if (!gum) return reject(new Error('getUserMedia not supported'));
+      gum.call(navigator, constraints, resolve, reject);
+    });
+  }
+
+  async function getUserMediaSafe(constraints: Constraints): Promise<MediaStream> {
+    if (typeof window === 'undefined') throw new Error('Window not available (SSR/Pre-render).');
+    if (!('isSecureContext' in window) || !window.isSecureContext) throw new Error('HTTPS required for camera.');
+    const md = (navigator as any).mediaDevices;
+    if (md && typeof md.getUserMedia === 'function') return md.getUserMedia(constraints);
+    return legacyGetUserMedia(constraints);
+  }
+
+  /* ---------------- UI ---------------- */
+  return (
+    <div className="photobooth-center">
+      <p className="settings-btn" onClick={backToSettings}>Back to Settings</p>
+
+      {error && <p className="error">{error}</p>}
+
+      <div className="photobooth-center-btn">
+        {videoReady && <button
+          className="btn camera"
+          onClick={takeMultiplePicturesAtOnce}
+          disabled={!videoReady || isLoadingCamera || isCapturing}
+          aria-label="Take photos"
+          title={!videoReady ? 'Starting camera… (tap once to allow)' : 'Take photos'}
+        >
+          <CameraIcon />
+        </button>
+        }
+        {!videoReady && !isLoadingCamera && (
+          <button
+            className="btn"
+            onClick={startCamera}
+            aria-label="Start camera"
+            title="Start camera"
+            style={{ marginLeft: 12 }}
+          >
+            Start Camera
+          </button>
+        )}
+      </div>
+
+      {/* Always render video so the ref is never null */}
+      <div className="video-wrap">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          onLoadedMetadata={() => setVideoReady(true)}
+          onCanPlay={() => setVideoReady(true)}
+          className={filter === 'blackwhite' ? 'blackwhite' : ''}
+        />
+        {isLoadingCamera && (
+          <div className="spinner-container">
+            <div className="spinner-icon"></div>
+          </div>
+        )}
+
+        {/* Progress /Countdown overlay */}
+        {!isLoadingCamera && countdown !== null && (
+          <div className="countdown-section">
+            <span className="count">{shots.length}/{shotsNum}</span>
+          </div>
+        )}
+
+        {/* Circular countdown */}
+        {countdown !== null && (
+          <div className="spinner-container">
+            <div className="spinner-container-countdown">
+              <svg className="spinner-countdown" viewBox="0 0 100 100" fill="white">
+                <circle cx="50" cy="50" r="45"></circle>
+                <path className="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
+              </svg>
+              <div className="spinner-text">{countdown}</div>
             </div>
+          </div>
+        )}
+      </div>
 
-
-            {isCameraOn && (<div className="video-wrap">
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className={filter === "blackwhite" ? "blackwhite" : ""}
-                />
-                {isLoadingCamera && (
-                    <div className="spinner-container">
-                        <div className="spinner-icon"></div>
-                    </div>
-                )}
-
-                {/* Progress /Countdown overlay */}
-                {!isLoadingCamera && countdown !== null && (
-                    <div className="countdown-section">
-                        <span className="count"> {shots.length}/{shotsNum} </span>
-                    </div>
-                )}
-
-                {/* Circular countdown */}
-                {countdown !== null && (
-                    <div className="spinner-container">
-                        <div className="spinner-container-countdown">
-                            <svg className="spinner-countdown" viewBox="0 0 100 100" fill="white">
-                                <circle cx="50" cy="50" r="45"></circle>
-                                <path className="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
-                            </svg>
-                            <div className="spinner-text">{countdown}</div>
-                        </div>
-                    </div>
-                )}
-
-            </div>)}
-
-            {/* {!stripComplete && (<div className="photobooth-center-btn">
-                <button
-                    className="btn"
-                    onClick={stopCamera}
-                    disabled={isLoadingCamera || isCapturing}
-                >
-                    Stop Camera
-                </button>
-            </div>)} */}
- 
-
-            {!finalStrip && shots.length > 0 && (
-                <div className="shots">
-                    {shots.map((s, i) => (
-                        <img key={i} src={s} alt={`Shot ${i + 1}`} className="thumb" />
-                    ))}
-                </div>
-            )}
-
-
-            {finalStrip && (
-                <>
-                    <div className="photobooth-center-btn">
-                        <button
-                            className="btn"
-                            onClick={() => download(finalStrip)}
-                            disabled={!finalStrip}
-                        >
-                            Download Strip
-                        </button>
-                    </div>
-
-                    <section className="mt-6">
-                        <h2 className="text-lg font-medium mb-2">Final Strip Preview</h2>
-                        <img
-                            src={finalStrip}
-                            alt="Photo strip"
-                            className="final-strip"
-                            onClick={() => openModal({largeUrl: finalStrip, alt: 'Photo strip'})}
-                        />
-                    </section>
-                </>
-            )}
-
-            {modalImage && (
-                <Modal
-                    src={modalImage.largeUrl}
-                    alt={modalImage.alt}
-                    onClose={closeModal}
-                />
-            )}
-
-            {/* Hidden canvases (1: last frame, 2: composition) */}
-            <div className="hidden-canvases">
-                <canvas ref={frameCanvasRef} />
-                <canvas ref={composeCanvasRef} />
-            </div>
+      {!finalStrip && shots.length > 0 && (
+        <div className="shots">
+          {shots.map((s, i) => (
+            <img key={i} src={s} alt={`Shot ${i + 1}`} className="thumb" />
+          ))}
         </div>
-    )
+      )}
+
+      {finalStrip && (
+        <>
+          <div className="photobooth-center-btn">
+            <button className="btn" onClick={() => download(finalStrip!)} disabled={!finalStrip}>
+              Download Strip
+            </button>
+          </div>
+
+          <section className="mt-6">
+            <h2 className="text-lg font-medium mb-2">Final Strip Preview</h2>
+            <img
+              src={finalStrip!}
+              alt="Photo strip"
+              className="final-strip"
+              onClick={() => openModal({ largeUrl: finalStrip!, alt: 'Photo strip' })}
+            />
+          </section>
+        </>
+      )}
+
+      {modalImage && <Modal src={modalImage.largeUrl} alt={modalImage.alt} onClose={() => setModalImage(null)} />}
+
+      {/* Hidden canvases */}
+      <div className="hidden-canvases">
+        <canvas ref={frameCanvasRef} />
+        <canvas ref={composeCanvasRef} />
+      </div>
+    </div>
+  );
 }

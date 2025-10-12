@@ -79,7 +79,7 @@ export default function PhotoBoothSettings() {
                     </div>
     
                     <div className="field">
-                        <label htmlFor="textDirection">Add Text Top or Below::</label>
+                        <label htmlFor="textDirection">Add Text Top or Below:</label>
                         <div className="select-wrap">
                             <DirIcon />
                             <select id="textDirection" className="select" value={textDirection} onChange={(e) => setTextDirection(e.target.value)}>
@@ -112,7 +112,7 @@ export default function PhotoBoothSettings() {
                         <label htmlFor="filter">Select a Color for Text:</label>
                         <div className="input-wrap">
                             <span className="leading" aria-hidden="true">
-                                <TextIcon  fill={selectedTextColor}/>
+                                <TextIcon />
                             </span>
                             <input
                                 type="color"
