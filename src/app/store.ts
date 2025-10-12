@@ -37,7 +37,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       shotsNum: 3,
       textDirection: 'top',
       selectedColor: '#000000ff',
-      selectedTextColor: '#fff',
+      selectedTextColor: '#ffffff',
       selectedFilter: 'color',
       // Actions to update settings
       setText: (text) => set({ text }),

@@ -25,10 +25,10 @@
     align-items: center;
     justify-content: center;
 }
-
+/* 
 .centered-content {
     display: flex;
-}
+} */
 
 .video-wrap {
     position:relative;

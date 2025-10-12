@@ -402,7 +402,7 @@ export default function PhotoBoothVideoCamera() {
             </div>
         </div>
 
-      {!finalStrip && shots.length > 0 && (
+      {shots.length > 0 && (
         <div className="shots">
           {shots.map((s, i) => (
             <img key={i} src={s} alt={`Shot ${i + 1}`} className="thumb" />
