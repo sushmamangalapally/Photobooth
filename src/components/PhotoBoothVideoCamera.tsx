@@ -4,7 +4,7 @@ import { useAppStore, useSettingsStore } from "../app/store.ts";
 import {ReactComponent as CameraIcon} from '../assets/camera-icon.svg'
 import '../styles/boothCamera.css';
 
-type ModalImage = { largeUrl: string; alt: string };
+type ModalImage = { largeUrl: string; alt: string } | null;
 
 export default function PhotoBoothVideoCamera() {
     // Refs
@@ -19,7 +19,7 @@ export default function PhotoBoothVideoCamera() {
     const filter = useSettingsStore((s) => s.selectedFilter);
     const shotsNum = useSettingsStore((s) => s.shotsNum);
     const selectedColor = useSettingsStore((s) => s.selectedColor);
-    const selectedTextColor = useSettingsStore((s) => s.selectedTextColor);
+    const selectedTextColor = useSettingsStore((s) => s.selectedTextColor)
     const text = useSettingsStore((s) => s.text);
     const textDirection = useSettingsStore((s) => s.textDirection);
     const enterBooth = useAppStore((s) => s.enterBooth);
@@ -43,10 +43,10 @@ export default function PhotoBoothVideoCamera() {
         if (!video) {
             return;
         }
-        const width = video.videoWidth || 1280;
-        const height = video.videoHeight || 720;
 
         function handleLoadedMeta() {
+            const width = video?.videoWidth || 1280;
+            const height = video?.videoHeight || 720;
 
             const frameCanvas = frameCanvasRef.current;
             if (frameCanvas) {
@@ -69,7 +69,6 @@ export default function PhotoBoothVideoCamera() {
 
     async function startCamera() {
         try {
-            console.log('startCamera')
             setError(null);
             setIsLoadingCamera(true);
             // If we already have a stream, reuse it
@@ -86,22 +85,16 @@ export default function PhotoBoothVideoCamera() {
             }
 
             // Attach to <video> if present
-            if (view === 'session' && videoRef.current && streamRef.current) {
+            if (videoRef.current && streamRef.current) {
                 const video = videoRef.current;
                 video.srcObject = streamRef.current;
-                video.muted = true;                      // autoplay policy
-                video.playsInline = true;                // iOS
-                video.setAttribute('playsinline','true');
-                await video.play().catch(() => {});      // ignore if it needs another tap
-                video.onloadedmetadata = () => video.play().catch(()=>{});
-
-                // video.setAttribute("playsinline", "true"); // iOS Safari
-                // try {
-                //     await video.play(); // may require a user gesture on iOS
-                // } catch (err) {
-                //     // If autoplay is blocked, button press later will succeed
-                //     console.error(err);
-                // }
+                video.setAttribute("playsinline", "true"); // iOS Safari
+                try {
+                    await video.play(); // may require a user gesture on iOS
+                } catch (err) {
+                    // If autoplay is blocked, button press later will succeed
+                    console.error(err);
+                }
             }
             setIsCameraOn(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -157,49 +150,26 @@ export default function PhotoBoothVideoCamera() {
 
     }
 
-    // useEffect(() => {
-    //     // Auto-start on mount; stop on unmount
-    //     let mounted = true;
-    //     startCamera();
-    //     if (!mounted) {
-    //         stopCamera();
-    //     }
-    //     // (async () => {
-    //     //     await startCamera();
-    //     //     if (!mounted) {
-    //     //         stopCamera();
-    //     //     }
-    //     // })();
-    //     return async () => { 
-    //         mounted = false;
-    //         await sleep(100);
-    //         stopCamera();
-    //     };
+    useEffect(() => {
+        // Auto-start on mount; stop on unmount
+        let mounted = true;
+        startCamera();
+        if (!mounted) {
+            stopCamera();
+        }
+        // (async () => {
+        //     await startCamera();
+        //     if (!mounted) {
+        //         stopCamera();
+        //     }
+        // })();
+        return () => { 
+            mounted = false;
+            // await sleep(100);
+            stopCamera();
+        };
 
-    // }, [view]);
-// useEffect(() => {
-//   let cancelled = false;
-
-//   const start = async () => {
-//     try {
-//       // await whatever you need (e.g., startCamera())
-//       await startCamera();
-//       if (cancelled) return;
-//       // any post-start state updates here
-//     } catch (e) {
-//       // handle errors
-//     }
-//   };
-
-//   start(); // fire and forget
-
-//   // cleanup MUST be synchronous
-//   return () => {
-//     cancelled = true;
-//     stopCamera();  // sync teardown
-//   };
-// }, []); // add deps if needed
-
+    }, [view]);
 
      /* ---------------- Capture & compose ---------------- */
 
