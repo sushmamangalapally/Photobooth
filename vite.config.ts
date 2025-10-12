@@ -5,10 +5,11 @@ import svgr from '@svgr/rollup';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/Photobooth/",
+  base: "/",
   plugins: [
     react(),
     svgr({
           dimensions: false, // This disables the width and height attributes
         }),],
 })
+
