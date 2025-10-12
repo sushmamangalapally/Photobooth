@@ -5,6 +5,7 @@ import {ReactComponent as CameraIcon} from '../assets/camera-icon.svg'
 import '../styles/boothCamera.css';
 
 type ModalImage = { largeUrl: string; alt: string } | null;
+type Constraints = MediaStreamConstraints;
 
 export default function PhotoBoothVideoCamera() {
     // Refs
@@ -71,9 +72,21 @@ export default function PhotoBoothVideoCamera() {
         try {
             setError(null);
             setIsLoadingCamera(true);
+            const hasModern = !!navigator.mediaDevices?.getUserMedia;
+            const hasLegacy =
+            !!(navigator as any).getUserMedia ||
+            !!(navigator as any).webkitGetUserMedia ||
+            !!(navigator as any).mozGetUserMedia;
+
+            if (!hasModern && !hasLegacy) {
+            throw new Error(
+                'Camera API not available in this browser. Try Safari/Chrome latest or disable in-app/embedded browser.'
+            );
+            }
+
             // If we already have a stream, reuse it
             if (!streamRef.current) {
-                const ms = await navigator.mediaDevices.getUserMedia({
+                const ms = await getUserMediaSafe({
                     audio: false,
                     video: {
                         width: { ideal: 1280 },
@@ -84,24 +97,60 @@ export default function PhotoBoothVideoCamera() {
                 streamRef.current = ms;
             }
 
+    // 3) ensure <video> exists and attach stream
+    const v = await (async () => {
+      if (videoRef.current) return videoRef.current;
+      // give React a frame to mount the element
+      await new Promise(r => requestAnimationFrame(r));
+      if (!videoRef.current) throw new Error('Video element not mounted yet.');
+      return videoRef.current;
+    })();
+
+    v.srcObject = streamRef.current!;
+    v.muted = true;
+    v.playsInline = true;
+    v.setAttribute('playsinline', 'true');
+
+    try { await v.play(); } catch { /* iOS may need a second tap */ }
+
+    // wait for metadata/canplay so the first frame isn’t black
+    await new Promise<void>((res) => {
+      if (v.readyState >= 2) return res();
+      const done = () => { v.removeEventListener('loadedmetadata', done); v.removeEventListener('canplay', done); res(); };
+      v.addEventListener('loadedmetadata', done, { once: true });
+      v.addEventListener('canplay', done, { once: true });
+    });
+
+
             // Attach to <video> if present
-            if (videoRef.current && streamRef.current) {
-                const video = videoRef.current;
-                video.srcObject = streamRef.current;
-                video.setAttribute("playsinline", "true"); // iOS Safari
-                try {
-                    await video.play(); // may require a user gesture on iOS
-                } catch (err) {
-                    // If autoplay is blocked, button press later will succeed
-                    console.error(err);
-                }
-            }
+            // if (videoRef.current && streamRef.current) {
+            //     const video = videoRef.current;
+            //     video.srcObject = streamRef.current;
+            //     video.setAttribute("playsinline", "true"); // iOS Safari
+            //     try {
+            //         await video.play(); // may require a user gesture on iOS
+            //     } catch (err) {
+            //         // If autoplay is blocked, button press later will succeed
+            //         console.error(err);
+            //     }
+            // }
             setIsCameraOn(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             console.error(e);
-            setError(e?.message ?? "Unable to access camera");
+            // setError(e?.message ?? "Unable to access camera");
+            // setIsCameraOn(false);
+
+            const name = e?.name || '';
+            const msg  = e?.message || 'Unable to access camera';
+
+            // friendlier messages
+            if (name === 'NotAllowedError') setError('Camera permission denied.');
+            else if (name === 'NotFoundError') setError('No camera found on this device.');
+            else setError(msg);
+
             setIsCameraOn(false);
+
         } finally {
             setIsLoadingCamera(false);
         }
@@ -149,6 +198,17 @@ export default function PhotoBoothVideoCamera() {
         }
 
     }
+
+    console.table({
+  isSecureContext: window.isSecureContext,
+  hasMediaDevices: !!navigator.mediaDevices,
+  hasGUM: !!navigator.mediaDevices?.getUserMedia,
+  legacy_webkitGetUserMedia: !!(navigator as any).webkitGetUserMedia,
+  legacy_getUserMedia: !!(navigator as any).getUserMedia,
+  inIframe: window.self !== window.top,
+  userAgent: navigator.userAgent
+});
+
 
     useEffect(() => {
         // Auto-start on mount; stop on unmount
@@ -368,6 +428,36 @@ export default function PhotoBoothVideoCamera() {
         setError(null);
     }
   
+function legacyGetUserMedia(constraints: Constraints): Promise<MediaStream> {
+  return new Promise((resolve, reject) => {
+    // older Safari/Firefox prefixes
+    const gum =
+      (navigator as any).getUserMedia ||
+      (navigator as any).webkitGetUserMedia ||
+      (navigator as any).mozGetUserMedia;
+
+    if (!gum) {
+      reject(new Error('getUserMedia not supported'));
+      return;
+    }
+    gum.call(navigator, constraints, resolve, reject);
+  });
+}
+
+async function getUserMediaSafe(constraints: Constraints): Promise<MediaStream> {
+  // Must be HTTPS and in a top-level browsing context for some browsers
+  if (!('isSecureContext' in window) || !window.isSecureContext) {
+    throw new Error('This page is not secure (HTTPS required).');
+  }
+
+  // Modern API
+  if (navigator.mediaDevices?.getUserMedia) {
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+
+  // Legacy fallback
+  return legacyGetUserMedia(constraints);
+}
 
     return (
         <div className="photobooth-center">
