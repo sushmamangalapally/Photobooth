@@ -2,8 +2,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Modal from './Modal';
 import { useAppStore, useSettingsStore } from '../app/store.ts';
-// If you use Vite + vite-plugin-svgr, prefer:
-// import CameraIcon from '../assets/camera-icon.svg?react';
 import { ReactComponent as CameraIcon } from '../assets/camera-icon.svg';
 import '../styles/boothCamera.css';
 
@@ -361,42 +359,44 @@ export default function PhotoBoothVideoCamera() {
       </div>
 
       {/* Always render video so the ref is never null */}
-      <div className="video-wrap">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          playsInline
-          onLoadedMetadata={() => setVideoReady(true)}
-          onCanPlay={() => setVideoReady(true)}
-          className={filter === 'blackwhite' ? 'blackwhite' : ''}
-        />
-        {isLoadingCamera && (
-          <div className="spinner-container">
-            <div className="spinner-icon"></div>
-          </div>
-        )}
+        <div className="video-section">
+            <div className="video-wrap">
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    onLoadedMetadata={() => setVideoReady(true)}
+                    onCanPlay={() => setVideoReady(true)}
+                    className={filter === 'blackwhite' ? 'blackwhite' : ''}
+                />
+                {isLoadingCamera && (
+                    <div className="spinner-container">
+                        <div className="spinner-icon"></div>
+                    </div>
+                )}
 
-        {/* Progress /Countdown overlay */}
-        {!isLoadingCamera && countdown !== null && (
-          <div className="countdown-section">
-            <span className="count">{shots.length}/{shotsNum}</span>
-          </div>
-        )}
+                {/* Progress /Countdown overlay */}
+                {!isLoadingCamera && countdown !== null && (
+                <div className="countdown-section">
+                    <span className="count">{shots.length+1}/{shotsNum}</span>
+                </div>
+                )}
 
-        {/* Circular countdown */}
-        {countdown !== null && (
-          <div className="spinner-container">
-            <div className="spinner-container-countdown">
-              <svg className="spinner-countdown" viewBox="0 0 100 100" fill="white">
-                <circle cx="50" cy="50" r="45"></circle>
-                <path className="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
-              </svg>
-              <div className="spinner-text">{countdown}</div>
+                {/* Circular countdown */}
+                {countdown !== null && (
+                <div className="spinner-container">
+                    <div className="spinner-container-countdown">
+                    <svg className="spinner-countdown" viewBox="0 0 100 100" fill="white">
+                        <circle cx="50" cy="50" r="45"></circle>
+                        <path className="spinner-path" d="M 50,5 A 45,45 0 1,1 50,95 A 45,45 0 1,1 50,5"></path>
+                    </svg>
+                    <div className="spinner-text">{countdown}</div>
+                    </div>
+                </div>
+                )}
             </div>
-          </div>
-        )}
-      </div>
+        </div>
 
       {!finalStrip && shots.length > 0 && (
         <div className="shots">

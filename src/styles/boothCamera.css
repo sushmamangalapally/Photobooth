@@ -1,10 +1,12 @@
 .hidden-canvases {
   display: none;
 }
+
 .countdown-section {
   font-size: 3.2em;
   line-height: 1.1;
   font-weight: 600;
+  color: red;
 }
 
 .final-strip {
@@ -18,9 +20,30 @@
     border-radius: 50%;
 }
 
-/* video {
-    width: 90%;
-} */
+.video-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.centered-content {
+    display: flex;
+}
+
+.video-wrap {
+    position:relative;
+    width:min(90vw,900px);
+    aspect-ratio:16/9;
+    background:#000;
+    margin:0 auto;
+}
+
+.video-wrap video {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
 
 /* Spinner Styling */
 .spinner-container {
@@ -80,5 +103,4 @@
   pointer-events: none;   /* clicks pass through */
 }
 
-.video-wrap { position: relative; width: min(90vw, 900px); aspect-ratio: 16/9; background:#000; }
-.video-wrap video { width: 100%; height: 100%; object-fit: cover; display:block; }
+
